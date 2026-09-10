@@ -101,6 +101,26 @@ http://localhost:5174
 
 프로덕션 빌드에는 이 청크가 만들어지지 않습니다.
 
+## 작업 규칙
+
+`main` 에 **직접 push 해도 됩니다.** 라이트 버전이라 PR 을 강제하지 않습니다.
+
+다만 `main` 룰셋에 **CI 필수 상태 검사**가 걸려 있습니다
+(`test · lint:principles · build`). 저장소 admin 은 우회할 수 있으므로 관리자
+입장에서는 직접 push 가 그대로 되고, 그 외에는 검사가 통과한 커밋만
+`main` 에 올라갑니다.
+
+CI 는 push 와 PR 양쪽에서 돌고, 로컬에서 미리 같은 것을 돌릴 수 있습니다.
+
+```bash
+npm run typecheck && npm run lint:principles && npm run test:coverage && npm run build
+```
+
+**CI 잡 이름을 바꾸지 마세요.** GitHub 이 보고하는 상태 검사 이름은 워크플로
+이름이 아니라 **잡 이름**이고, 그 문자열이 룰셋의 필수 검사 이름입니다.
+바꾸면 룰셋이 없는 검사를 기다리게 되어 `main` 이 잠깁니다. 이유는
+`.github/workflows/ci.yml` 주석에.
+
 ## 구조
 
 ```
