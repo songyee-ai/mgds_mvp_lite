@@ -1,28 +1,75 @@
 /*
- * 인트로 3장. 색상은 전부 tokens.css 의 커스텀 속성입니다
- * (`lint-color` 가 하드코딩을 막습니다).
+ * 인트로 3장.
  *
- * 한 장이 화면 하나를 꽉 채웁니다 — 위에 스킵, 가운데 그림과 문장,
- * 아래에 진행 점과 다음 버튼. 스크롤이 생기면 "2~3줄"이라는 원문의
- * 호흡이 깨지므로 세로를 고정하고 그림이 남는 자리를 먹습니다.
+ * 색상은 전부 tokens.css 의 커스텀 속성입니다 (`lint-color` 가 하드코딩을
+ * 막습니다). 한 장이 화면 하나를 채우고 스크롤이 없습니다 — 스크롤이
+ * 생기면 문구의 줄바꿈이 카피의 일부라는 전제가 깨집니다.
  */
 
+/*
+ * **네 칸의 높이가 고정입니다.** grid 로 두는 이유가 그것입니다.
+ *
+ * flex 로 두면 문단의 줄 수에 따라 문단 칸이 커지고, 그만큼 그림 칸이
+ * 줄어듭니다. 1·2장은 본문 네 줄이고 3장은 세 줄 + 워드마크라서 장을
+ * 넘길 때마다 그림과 제목이 위아래로 흔들렸습니다.
+ *
+ * 문단 칸을 고정하면 **제목의 y 가 세 장에서 같고**, 그림 칸의 아래가
+ * 늘 제목 바로 위입니다. 장을 넘길 때 그림만 바뀌고 화면은 움직이지
+ * 않습니다.
+ *
+ * 남는 세로는 그림 칸(`minmax(0, 1fr)`)이 먹습니다. 그림은 자기 상자
+ * 아래에 붙으므로(`xMidYMax`) 칸이 커져도 바닥의 위치는 그대로입니다.
+ */
 .page {
-  display: flex;
-  flex-direction: column;
-  /* 셸의 좌우 여백(1rem)을 빼고 화면 높이를 채웁니다. */
-  min-height: calc(100dvh - 2rem);
+  display: grid;
+  /*
+   * 문단 칸이 `minmax(고정, auto)` 입니다 — 고정 높이를 하한으로 두고,
+   * 그보다 더 필요하면 자랍니다.
+   *
+   * 정확히 고정으로 두면 아주 좁은 화면에서 제목이 두 줄로 갈릴 때 문단이
+   * 자기 칸을 넘쳐 버튼과 겹칩니다. 하한으로 두면 평소에는 세 장의 위치가
+   * 같고, 넘칠 때만 그림 칸을 조금 내주고 겹치지 않습니다.
+   */
+  grid-template-rows: auto minmax(0, 1fr) minmax(var(--intro-body-height), auto) auto;
+  /*
+   * **`min-height` 가 아니라 `height` 입니다.**
+   *
+   * `min-height` 만 주면 grid 컨테이너의 높이가 `auto` 로 남고, 그러면
+   * 남는 세로가 정해지지 않아 `1fr` 이 `auto`(내용 크기)로 풀립니다.
+   * 그림 칸의 내용은 절대 위치 SVG 라 내용 크기가 0 이고, 칸이 통째로
+   * 사라졌습니다 — 실제로 그림 칸 높이가 0px 이 되고 아래로 185px 이
+   * 넘쳤습니다.
+   *
+   * 확정 높이를 주면 `1fr` 이 남는 세로를 받습니다. 셸의 좌우 여백(1rem)을
+   * 빼서 화면 높이에 정확히 맞춥니다.
+   */
+  height: calc(100dvh - 2rem);
   gap: 1rem;
+
+  /*
+   * 문단 칸의 높이. **세 장 중 가장 긴 것에 맞춥니다.**
+   *
+   * 1·2장 = 제목 + 본문 4줄, 3장 = 제목 + 본문 3줄 + 워드마크.
+   * 좁은 화면에서 제목이 두 줄로 갈릴 여지까지 더해 잡았습니다 —
+   * 모자라면 문단이 그림 칸을 밀고 올라가 고정이 깨집니다.
+   */
+  --intro-body-height: 13.25rem;
+}
+
+/* 세로가 아주 짧은 화면에서는 문단 칸을 줄여 그림 칸을 지킵니다. */
+@media (max-height: 680px) {
+  .page {
+    --intro-body-height: 11.75rem;
+  }
 }
 
 .topBar {
   display: flex;
   justify-content: flex-end;
-  /* 스킵이 그림에 눌리지 않게 자기 줄을 지킵니다. */
-  flex: 0 0 auto;
+  align-items: flex-start;
 }
 
-/* "우측 상단에 작게" (CONTEXT 5-2). 작아도 터치 타깃은 44px 입니다. */
+/* "우측 상단에 작게". 작아도 터치 타깃은 44px 입니다 (NFR-A A-2). */
 .skip {
   min-height: var(--tap-min);
   padding: 0 0.5rem;
@@ -35,70 +82,128 @@
 }
 
 /*
- * 일러스트가 앉는 자리 (`IntroArt.tsx`).
+ * 일러스트 칸. 안의 정사각 블록을 아래·가운데에 놓습니다.
  *
- * **테두리도 배경도 없습니다.** 카드처럼 보이면 그림이 "삽입된 이미지"가
- * 되는데, 이 그림들은 화면의 일부로 읽혀야 합니다. 처음에는 자리표시자라
- * 테두리와 그라디언트가 있었고, 그것이 빈 카드로 보이던 원인이었습니다.
- *
- * 남는 세로 공간을 여기가 먹되 상한을 둡니다 — 큰 화면에서 그림만 커지면
- * 문장이 아래로 밀려 내려가고, 인트로에서 먼저 읽혀야 하는 것은 문장입니다.
+ * 남는 세로는 이 칸이 먹고(grid 의 `1fr`), 블록은 그 칸의 바닥에 앉습니다.
+ * 그래서 그림의 아래가 늘 제목 바로 위이고, 남는 자리는 그림 위쪽으로
+ * 가서 방의 여백처럼 읽힙니다.
  */
 .art {
-  /* 남는 세로는 그림이 먹습니다. 그래야 문장과 버튼 사이에 공백이 고이지 않습니다. */
-  flex: 1 1 auto;
-  min-height: 9rem;
-  /* 큰 화면에서 그림만 커지는 것은 막습니다 — 먼저 읽혀야 하는 것은 문장입니다. */
-  max-height: 60vh;
-  /* 세로가 짧은 화면에서 그림이 문장을 밀어내지 않게 자기부터 줄어듭니다. */
-  min-width: 0;
-  /*
-   * 안의 SVG 가 이 칸을 실제로 다 쓰게 만드는 기준입니다 (`.artSvg` 참고).
-   * 이것이 없으면 SVG 가 자기 종횡비대로만 커지고, 칸의 남는 세로가
-   * 그림 아래에 고여 바닥선과 제목 사이가 벌어집니다.
-   */
+  min-height: 0;
+  display: grid;
+  place-items: end center;
+}
+
+/*
+ * **정사각형입니다.** 레퍼런스와 같은 구조 — 그림이 화면에 녹아드는 것이
+ * 아니라 둥근 모서리로 잘린 블록에 담깁니다.
+ *
+ * 처음에는 테두리도 배경도 없이 두었습니다. 그때는 그림 자리가 비어 있어서
+ * 담는 상자가 곧 빈 카드로 보였기 때문입니다. 그림이 들어오면 담는 쪽이
+ * 맞습니다 — 그림에 자기 배경이 있고, 그 경계가 화면에서 분명해야 합니다.
+ *
+ * **1440×1440 일러스트가 이 자리에 들어옵니다.** `<Art />` 를 `<img>` 로
+ * 바꾸는 것 말고는 고칠 것이 없습니다.
+ *
+ * ## 정사각을 지키는 방법
+ *
+ * **폭으로만 크기를 정합니다.** `height: 100%` 로 두면 정사각이 깨집니다 —
+ * 높이가 확정값이 되어 `aspect-ratio` 가 폭을 계산하고, 그 폭이
+ * `max-width` 에 걸려 잘려도 **높이는 되돌아오지 않습니다.** 실제로
+ * 343×392 가 나왔습니다.
+ *
+ * `aspect-ratio` 는 지정되지 않은 축만 계산하므로, 폭을 확정하고 높이를
+ * 비워 두면 높이가 늘 폭과 같습니다. 그리고 세로가 모자란 화면에서는
+ * **폭에 상한을 걸어** 높이를 함께 줄입니다.
+ *
+ * 그 상한이 `calc(100dvh - 212px - 문단칸)` 입니다. 212px 은 그림 칸이
+ * 쓸 수 없는 세로의 합입니다.
+ *
+ * | | |
+ * |---|---|
+ * | 셸 위아래 여백 | 32px |
+ * | 스킵 줄 | 44px |
+ * | 칸 사이 간격 3개 | 48px |
+ * | 진행 점 + 버튼 | 84px |
+ * | **합** | **208px** (4px 여유를 더해 212) |
+ *
+ * **스킵 줄이나 버튼의 높이를 바꾸면 이 숫자도 바꿔야 합니다.** 크게
+ * 잡으면 그림만 작아지고, 작게 잡으면 화면이 아래로 넘칩니다.
+ */
+.artFrame {
   position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: calc(100dvh - 212px - var(--intro-body-height));
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: var(--art-canvas);
 }
 
+/*
+ * **절대 위치입니다.** `height: 100%` 만으로는 안 됩니다 — 부모의 높이가
+ * grid/flex 로 정해지고 `height` 속성 자체는 `auto` 라서 백분율 높이가
+ * 해소되지 않고 SVG 가 자기 종횡비대로만 큽니다. 실제로 칸은 422px 인데
+ * SVG 는 195px 이었고, 그래서 아래 정렬이 아무 일도 하지 않았습니다.
+ */
+.artSvg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 문단. 칸의 위쪽에 붙어야 제목의 y 가 세 장에서 같습니다. */
 .body {
-  flex: 0 0 auto;
+  min-height: 0;
 }
 
+/*
+ * 제목. 진한 초록이고 본문보다 확실히 큽니다.
+ *
+ * **두 줄 자리를 늘 비워 둡니다** (`min-height`). 제목 길이가 장마다
+ * 달라서(1장이 가장 깁니다) 한 줄로 갈리는 장과 두 줄로 갈리는 장이
+ * 생기고, 그러면 그 아래 본문의 시작 y 가 장마다 달라집니다.
+ * 자리를 미리 잡아 두면 세 장의 본문이 같은 높이에서 시작합니다.
+ *
+ * `2.7em` = 줄높이 1.35 × 두 줄. 글자 크기를 바꾸면 함께 따라옵니다.
+ */
 .title {
   margin: 0 0 0.75rem;
+  min-height: 2.7em;
+  color: var(--heading);
   font-size: 1.5rem;
   line-height: 1.35;
 }
 
 /*
- * 원문의 줄 2개가 각각 <p> 입니다. 한 문단으로 합치면 화면 폭에 따라
- * 줄바꿈이 제멋대로 갈리고, 확정 카피의 호흡이 그 줄바꿈에 있습니다.
+ * 문단. 문단 사이에만 빈 줄만큼 띄웁니다 — 줄 사이가 아니라 문단 사이가
+ * 벌어져야 합니다 (`copy.intro.pages[].stanzas`).
+ */
+.stanza + .stanza {
+  margin-top: 0.875rem;
+}
+
+/*
+ * `stanzas` 안의 한 항목이 한 줄입니다. 한 문단으로 합치면 화면 폭에 따라
+ * 줄바꿈이 제멋대로 갈리고, 이 문구들의 호흡이 그 줄바꿈에 있습니다.
  */
 .line {
-  margin: 0.25rem 0;
+  margin: 0;
   color: var(--text-muted);
 }
 
 /* 3장에서만. 앱 이름이 처음 등장하는 자리입니다. */
 .wordmark {
-  margin: 1.5rem 0 0;
+  margin: 1.25rem 0 0;
   color: var(--accent);
   font-size: 1.125rem;
   letter-spacing: 0.02em;
 }
 
-/*
- * 진행 점과 다음 버튼.
- *
- * **`margin-top: auto` 를 쓰지 않습니다.** flex 는 자동 여백을 flex-grow
- * 보다 먼저 해소하므로, 여기에 auto 를 두면 남는 세로를 이 여백이 전부
- * 먹고 그림(`.art`)은 `min-height` 크기에 머무릅니다. 그림이 작아지고
- * 문장과 버튼 사이에 빈 자리가 생깁니다 — 실제로 그렇게 보였습니다.
- *
- * 남는 세로는 그림이 먹고, 문장과 이 묶음이 그 아래에 차례로 붙습니다.
- */
+/* 진행 점과 다음 버튼. grid 의 마지막 칸이라 늘 화면 아래입니다. */
 .footer {
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -143,7 +248,7 @@
 }
 
 /*
- * ── 일러스트 (IntroArt.tsx) ─────────────────────────────────────────
+ * ── 일러스트 색 (IntroArt.tsx) ──────────────────────────────────────
  *
  * **모든 색이 여기 있습니다.** SVG 쪽에는 클래스 이름만 있습니다 —
  * `.tsx` 에 색을 적으면 `scripts/lint-color.mjs` 가 못 봅니다(그 린트는
@@ -155,25 +260,7 @@
  * 눈에 보입니다.
  */
 
-/*
- * **절대 위치입니다.** `height: 100%` 만으로는 안 됩니다 — `.art` 의 높이가
- * flex 로 정해지고 `height` 속성 자체는 `auto` 라서, 백분율 높이가 해소되지
- * 않고 SVG 가 자기 종횡비대로만 큽니다. 실제로 칸은 422px 인데 SVG 는
- * 195px 이었습니다.
- *
- * 절대 위치는 백분율을 담는 상자(`.art`)의 확정된 높이에 대고 풀므로
- * 칸을 정확히 채웁니다. 그러면 `xMidYMax` 아래 정렬이 비로소 뜻을 갖고,
- * 그림의 바닥선이 제목 바로 위에 옵니다.
- */
-.artSvg {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-/* 창틀·바닥 같은 얇은 구조선. 채우지 않습니다. */
+/* 창틀·바닥 같은 얇은 구조선. 굵게 하면 도면처럼 보입니다. */
 .artLine {
   fill: none;
   stroke: var(--line);
@@ -181,18 +268,55 @@
   stroke-linecap: round;
 }
 
-/* 햇자리·바닥의 빛. 면이지만 뒤로 물러나 있어야 합니다. */
-.artGlow {
-  fill: var(--line);
-  opacity: 0.5;
+/*
+ * 햇살. 두 겹을 겹쳐 경계를 지웁니다.
+ *
+ * 강한 그라디언트 대신 은은한 투명도 차이만 씁니다 — 그라디언트를 쓰면
+ * 색을 SVG 안에 정의해야 하고(`<linearGradient>`), 그러면 `lint-color` 의
+ * 눈을 벗어납니다.
+ */
+.artLight > *,
+ellipse.artLight {
+  fill: var(--art-light);
+  opacity: 0.75;
 }
 
-/* 사람의 무릎, 카드 안의 글줄 — 있다는 것만 알면 되는 덩어리. */
-.artSoft {
+/* 러그와 카드 안의 날짜 줄 — 있다는 것만 알면 되는 면. */
+.artRug {
   fill: var(--line);
+  opacity: 0.7;
 }
 
-/* 아이와 사람의 실루엣. 그림에서 가장 진한 것. */
+/* 산책길. 멀어지며 좁아지는 면이라 더 옅게 둡니다. */
+.artPath {
+  fill: var(--line);
+  opacity: 0.45;
+}
+
+/*
+ * 보호자의 손·팔. **아이보다 연합니다.**
+ * 같은 진하기로 두면 둘이 경쟁하고, 이 그림들의 주인은 아이입니다.
+ */
+.artFigure,
+.artFigure > * {
+  fill: var(--art-figure);
+}
+
+/* 손가락. 면으로 그리면 뭉치므로 굵은 선으로 둡니다. */
+.artFinger > * {
+  fill: none;
+  stroke: var(--art-figure);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+/* 바닥에 닿은 자리를 알려 주는 그림자. 형태를 만들지는 않습니다. */
+.artShadow {
+  fill: var(--art-figure);
+  opacity: 0.45;
+}
+
+/* 아이와 보호자의 뒷모습. 그림에서 가장 진한 것. */
 .artInk {
   fill: var(--dot-good);
 }
@@ -204,19 +328,6 @@
   stroke-linecap: round;
 }
 
-/* 코처럼 실루엣 위에 뚫리는 밝은 점. */
-.artPaper {
-  fill: var(--bg);
-}
-
-/* 카드를 받치는 손. 선만 남깁니다. */
-.artHand {
-  fill: none;
-  stroke: var(--dot-hard);
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
 /* 기록 카드. 홈의 카드와 같은 재질로 읽히게 합니다. */
 .artCard {
   fill: var(--surface);
@@ -224,7 +335,10 @@
   stroke-width: 2;
 }
 
-/* 흐름 곡선. 이 그림에서 유일하게 강조색을 쓰는 자리입니다. */
+/*
+ * 카드 안의 기록 선. 이 그림에서 강조색을 쓰는 유일한 자리입니다.
+ * **카드 밖으로 이어지지 않습니다** — 나가면 차트가 됩니다.
+ */
 .artCurve {
   fill: none;
   stroke: var(--accent);
@@ -236,10 +350,174 @@
   fill: var(--accent);
 }
 
+/* 카드 밖으로 이어지는 흐름. 멀어지는 것이라 옅습니다. */
+.artFlowDot > * {
+  fill: var(--accent);
+  opacity: 0.45;
+}
+
+/* 길가의 식물. 아이보다 연해서 배경으로 물러납니다. */
+.artPlant > * {
+  fill: var(--accent);
+  opacity: 0.55;
+}
+
+.artTrunk {
+  fill: none;
+  stroke: var(--art-figure);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+/* 공기 중의 작은 빛. 있다는 것도 잘 모를 만큼만. */
+.artSpark > * {
+  fill: var(--accent);
+  opacity: 0.28;
+}
+
 /* 목줄. 팽팽해 보이지 않게 가장 얇게. */
 .artLeash {
   fill: none;
-  stroke: var(--dot-hard);
+  stroke: var(--art-figure);
   stroke-width: 2;
   stroke-linecap: round;
+}
+
+/*
+ * ── 애니메이션 ──────────────────────────────────────────────────────
+ *
+ * **형태는 움직이지 않습니다.** 빛과 점만 움직입니다. 무엇을 그린 것인지는
+ * 정지 상태로도 읽혀야 하고, 움직임은 살아 있는 느낌만 더하는 것이라
+ * 형태를 흔들면 목적이 뒤집힙니다.
+ *
+ * `opacity` 와 `transform` 만 씁니다 — 둘은 합성기에서 처리되어 매 프레임
+ * 레이아웃을 다시 계산하지 않습니다.
+ *
+ * SVG 안의 요소는 `transform-box: fill-box` 가 없으면 SVG 좌표계 원점을
+ * 기준으로 변형됩니다. 자기 자리에서 커지고 작아지게 하려면 필요합니다.
+ */
+
+/* 1장 — 햇살이 아주 천천히 숨을 쉽니다. */
+@keyframes introLight {
+  from {
+    opacity: 0.62;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+
+.artLight > *,
+ellipse.artLight {
+  animation: introLight 7s ease-in-out infinite alternate;
+}
+
+/* 두 겹의 위상을 어긋나게 해서 경계가 더 흐려집니다. */
+.artLight > *:nth-child(2) {
+  animation-delay: -3.5s;
+}
+
+/*
+ * 1장 — 아이의 숨. 1% 남짓의 크기 변화입니다.
+ * 눈에 보이는 움직임이 아니라 "정지 화면이 아니다"라는 느낌만 남깁니다.
+ */
+@keyframes introBreathe {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(1.012);
+  }
+}
+
+.artBreathe {
+  transform-box: fill-box;
+  /* 바닥에 닿은 채로 등만 오르내립니다. */
+  transform-origin: bottom center;
+  animation: introBreathe 4.5s ease-in-out infinite alternate;
+}
+
+/*
+ * 2장 — 카드 밖의 점이 하나씩 나타나 이어집니다.
+ *
+ * 기록이 쌓여 흐름이 된다는 말을 움직임으로 한 번 더 합니다. 점들이
+ * 차례로 켜지고, 다 켜진 뒤 잠시 머물다가 처음으로 돌아갑니다.
+ */
+@keyframes introFlowDot {
+  0%,
+  8% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  24%,
+  86% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+.artFlowDot > * {
+  transform-box: fill-box;
+  animation: introFlowDot 7s ease-in-out infinite;
+}
+
+.artFlowDot > *:nth-child(1) {
+  animation-delay: 0s;
+}
+.artFlowDot > *:nth-child(2) {
+  animation-delay: 0.5s;
+}
+.artFlowDot > *:nth-child(3) {
+  animation-delay: 1s;
+}
+.artFlowDot > *:nth-child(4) {
+  animation-delay: 1.5s;
+}
+
+/* 3장 — 공기 중의 빛이 아주 천천히 떠오릅니다. */
+@keyframes introSpark {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  35%,
+  65% {
+    opacity: 0.28;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.artSpark > * {
+  transform-box: fill-box;
+  animation: introSpark 9s ease-in-out infinite;
+}
+
+.artSpark > *:nth-child(2) {
+  animation-delay: -3s;
+}
+.artSpark > *:nth-child(3) {
+  animation-delay: -6s;
+}
+
+/*
+ * **움직임을 원하지 않는 사람에게는 전부 멈춥니다.**
+ *
+ * 전정 장애가 있는 사람에게 미세한 반복 움직임은 어지럼을 일으킬 수
+ * 있습니다. 이 그림들은 정지 상태로도 완결이라 잃는 것이 없습니다.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .artLight > *,
+  ellipse.artLight,
+  .artBreathe,
+  .artFlowDot > *,
+  .artSpark > * {
+    animation: none;
+  }
 }

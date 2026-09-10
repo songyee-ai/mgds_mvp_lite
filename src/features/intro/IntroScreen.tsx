@@ -75,17 +75,34 @@ export function IntroScreen() {
         </button>
       </div>
 
-      {/* 일러스트. 장식이라 접근성 트리에서 뺍니다 — 문장이 같은 말을 합니다. */}
+      {/*
+        일러스트. 장식이라 접근성 트리에서 뺍니다 — 문장이 같은 말을 합니다.
+
+        `.artFrame` 이 **정사각형**이고 둥근 모서리로 잘립니다. 일러스트
+        이미지(1440×1440)가 들어오면 이 안의 `<Art />` 자리를 `<img>` 로
+        바꾸면 됩니다 — 화면도 CSS 도 그대로입니다.
+      */}
       <div className={styles.art} aria-hidden>
-        <Art />
+        <div className={styles.artFrame}>
+          <Art />
+        </div>
       </div>
 
       <div className={styles.body}>
         <h1 className={styles.title}>{page.title}</h1>
-        {page.lines.map((line) => (
-          <p key={line} className={styles.line}>
-            {line}
-          </p>
+        {/*
+          문단 사이의 빈 줄이 카피의 일부입니다 (`copy.intro.pages[].stanzas`).
+          문단을 `<div>` 로 묶고 그 사이에만 간격을 줍니다 — 줄 사이가
+          아니라 문단 사이가 벌어져야 합니다.
+        */}
+        {page.stanzas.map((stanza) => (
+          <div key={stanza[0]} className={styles.stanza}>
+            {stanza.map((line) => (
+              <p key={line} className={styles.line}>
+                {line}
+              </p>
+            ))}
+          </div>
         ))}
         {/* 3장에서 앱 이름이 처음 등장합니다. 영문이라 카피 파일에서 옵니다. */}
         {'wordmark' in page ? <p className={styles.wordmark}>{page.wordmark}</p> : null}
