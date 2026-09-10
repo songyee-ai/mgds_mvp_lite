@@ -36,7 +36,7 @@
    *
    * `min-height` 만 주면 grid 컨테이너의 높이가 `auto` 로 남고, 그러면
    * 남는 세로가 정해지지 않아 `1fr` 이 `auto`(내용 크기)로 풀립니다.
-   * 그림 칸의 내용은 절대 위치 SVG 라 내용 크기가 0 이고, 칸이 통째로
+   * 그림 칸의 내용은 높이를 스스로 정하지 않아 내용 크기가 0 이고, 칸이 통째로
    * 사라졌습니다 — 실제로 그림 칸 높이가 0px 이 되고 아래로 185px 이
    * 넘쳤습니다.
    *
@@ -101,21 +101,21 @@
  * (레퍼런스와 같은 구조).
  *
  * **칸을 꽉 채웁니다.** 그래서 이 블록의 비율은 화면에 따라 달라집니다 —
- * 긴 휴대폰에서는 세로로 긴 사각형(약 0.78:1), 짧은 화면에서는 가로로
+ * 긴 휴대폰에서는 세로로 긴 사각형(약 0.80:1), 짧은 화면에서는 가로로
  * 긴 띠(약 1.27:1)가 됩니다.
  *
  * ## 그래서 이미지는 잘립니다
  *
- * **1440×1440 일러스트가 이 자리에 들어옵니다.** 정사각 이미지를 정사각이
- * 아닌 칸에 넣으므로 `object-fit: cover` 로 채우고 넘치는 쪽을 자릅니다
- * (`.artImage`). 늘리지 않는 것이 중요합니다 — 늘리면 사람과 아이의
+ * **960×960 영상이 이 자리에 들어옵니다.** 정사각 영상을 정사각이 아닌
+ * 칸에 넣으므로 `object-fit: cover` 로 채우고 넘치는 쪽을 자릅니다
+ * (`.artMedia`). 늘리지 않는 것이 중요합니다 — 늘리면 사람과 아이의
  * 형태가 일그러집니다.
  *
  * ## 높이에만 상한을 겁니다
  *
  * 태블릿이나 데스크톱처럼 세로가 아주 긴 창에서는 폭이 상한(448px)에
  * 걸린 채 높이만 계속 자랍니다. 아이패드에서는 448×774(0.58:1)가 되어
- * **정사각 이미지의 좌우가 각 21% 잘렸습니다.**
+ * **정사각 영상의 좌우가 각 21% 잘렸습니다.**
  *
  * 그래서 높이를 폭의 1.25 배까지만 허용합니다. **폭에는 상한을 걸지
  * 않습니다** — 폭을 줄이면 글의 왼쪽 끝과 어긋나고, 그것이 이 구조를
@@ -153,32 +153,18 @@
 }
 
 /*
- * 일러스트 이미지가 들어올 자리 (`<img className={styles.artImage}>`).
+ * 움직이는 그림이 들어가는 자리 (`IntroMedia.tsx` 의 `<video>`).
  *
  * `cover` 는 비율을 지키며 칸을 덮고 넘치는 쪽을 자릅니다. `fill` 로 두면
- * 늘어나고, `contain` 으로 두면 위아래에 빈 띠가 생겨 블록이 채워지지
- * 않습니다.
+ * 늘어나 사람과 아이의 형태가 일그러지고, `contain` 으로 두면 위아래에
+ * 빈 띠가 생겨 블록이 채워지지 않습니다.
  */
-.artImage {
+.artMedia {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center;
-}
-
-/*
- * **절대 위치입니다.** `height: 100%` 만으로는 안 됩니다 — 부모의 높이가
- * grid/flex 로 정해지고 `height` 속성 자체는 `auto` 라서 백분율 높이가
- * 해소되지 않고 SVG 가 자기 종횡비대로만 큽니다. 실제로 칸은 422px 인데
- * SVG 는 195px 이었고, 그래서 아래 정렬이 아무 일도 하지 않았습니다.
- */
-.artSvg {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 
 /* 문단. 칸의 위쪽에 붙어야 제목의 y 가 세 장에서 같습니다. */
@@ -272,279 +258,4 @@
 
 .dotCurrent {
   background: var(--dot-good);
-}
-
-/*
- * ── 일러스트 색 (IntroArt.tsx) ──────────────────────────────────────
- *
- * **모든 색이 여기 있습니다.** SVG 쪽에는 클래스 이름만 있습니다 —
- * `.tsx` 에 색을 적으면 `scripts/lint-color.mjs` 가 못 봅니다(그 린트는
- * `.css` 만 훑습니다). 팔레트에 빨강이 없다는 것이 약속이 아니라 구조인
- * 이유가 검사이므로(PRD 원칙 P6), 색은 검사받는 곳에만 둡니다.
- *
- * 채움과 선을 클래스로 나눠 둔 이유는 SVG 의 기본값이 `fill: black` 이라
- * 클래스를 빠뜨리면 검은 덩어리가 나타나기 때문입니다. 빠뜨린 것이 곧
- * 눈에 보입니다.
- */
-
-/* 창틀·바닥 같은 얇은 구조선. 굵게 하면 도면처럼 보입니다. */
-.artLine {
-  fill: none;
-  stroke: var(--line);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-/*
- * 햇살. 두 겹을 겹쳐 경계를 지웁니다.
- *
- * 강한 그라디언트 대신 은은한 투명도 차이만 씁니다 — 그라디언트를 쓰면
- * 색을 SVG 안에 정의해야 하고(`<linearGradient>`), 그러면 `lint-color` 의
- * 눈을 벗어납니다.
- */
-.artLight > *,
-ellipse.artLight {
-  fill: var(--art-light);
-  opacity: 0.75;
-}
-
-/* 러그와 카드 안의 날짜 줄 — 있다는 것만 알면 되는 면. */
-.artRug {
-  fill: var(--line);
-  opacity: 0.7;
-}
-
-/* 산책길. 멀어지며 좁아지는 면이라 더 옅게 둡니다. */
-.artPath {
-  fill: var(--line);
-  opacity: 0.45;
-}
-
-/*
- * 보호자의 손·팔. **아이보다 연합니다.**
- * 같은 진하기로 두면 둘이 경쟁하고, 이 그림들의 주인은 아이입니다.
- */
-.artFigure,
-.artFigure > * {
-  fill: var(--art-figure);
-}
-
-/* 손가락. 면으로 그리면 뭉치므로 굵은 선으로 둡니다. */
-.artFinger > * {
-  fill: none;
-  stroke: var(--art-figure);
-  stroke-width: 7;
-  stroke-linecap: round;
-}
-
-/* 바닥에 닿은 자리를 알려 주는 그림자. 형태를 만들지는 않습니다. */
-.artShadow {
-  fill: var(--art-figure);
-  opacity: 0.45;
-}
-
-/* 아이와 보호자의 뒷모습. 그림에서 가장 진한 것. */
-.artInk {
-  fill: var(--dot-good);
-}
-
-.artInkStroke {
-  fill: none;
-  stroke: var(--dot-good);
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-/* 기록 카드. 홈의 카드와 같은 재질로 읽히게 합니다. */
-.artCard {
-  fill: var(--surface);
-  stroke: var(--line);
-  stroke-width: 2;
-}
-
-/*
- * 카드 안의 기록 선. 이 그림에서 강조색을 쓰는 유일한 자리입니다.
- * **카드 밖으로 이어지지 않습니다** — 나가면 차트가 됩니다.
- */
-.artCurve {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-}
-
-.artDot {
-  fill: var(--accent);
-}
-
-/* 카드 밖으로 이어지는 흐름. 멀어지는 것이라 옅습니다. */
-.artFlowDot > * {
-  fill: var(--accent);
-  opacity: 0.45;
-}
-
-/* 길가의 식물. 아이보다 연해서 배경으로 물러납니다. */
-.artPlant > * {
-  fill: var(--accent);
-  opacity: 0.55;
-}
-
-.artTrunk {
-  fill: none;
-  stroke: var(--art-figure);
-  stroke-width: 4;
-  stroke-linecap: round;
-}
-
-/* 공기 중의 작은 빛. 있다는 것도 잘 모를 만큼만. */
-.artSpark > * {
-  fill: var(--accent);
-  opacity: 0.28;
-}
-
-/* 목줄. 팽팽해 보이지 않게 가장 얇게. */
-.artLeash {
-  fill: none;
-  stroke: var(--art-figure);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-/*
- * ── 애니메이션 ──────────────────────────────────────────────────────
- *
- * **형태는 움직이지 않습니다.** 빛과 점만 움직입니다. 무엇을 그린 것인지는
- * 정지 상태로도 읽혀야 하고, 움직임은 살아 있는 느낌만 더하는 것이라
- * 형태를 흔들면 목적이 뒤집힙니다.
- *
- * `opacity` 와 `transform` 만 씁니다 — 둘은 합성기에서 처리되어 매 프레임
- * 레이아웃을 다시 계산하지 않습니다.
- *
- * SVG 안의 요소는 `transform-box: fill-box` 가 없으면 SVG 좌표계 원점을
- * 기준으로 변형됩니다. 자기 자리에서 커지고 작아지게 하려면 필요합니다.
- */
-
-/* 1장 — 햇살이 아주 천천히 숨을 쉽니다. */
-@keyframes introLight {
-  from {
-    opacity: 0.62;
-  }
-  to {
-    opacity: 0.85;
-  }
-}
-
-.artLight > *,
-ellipse.artLight {
-  animation: introLight 7s ease-in-out infinite alternate;
-}
-
-/* 두 겹의 위상을 어긋나게 해서 경계가 더 흐려집니다. */
-.artLight > *:nth-child(2) {
-  animation-delay: -3.5s;
-}
-
-/*
- * 1장 — 아이의 숨. 1% 남짓의 크기 변화입니다.
- * 눈에 보이는 움직임이 아니라 "정지 화면이 아니다"라는 느낌만 남깁니다.
- */
-@keyframes introBreathe {
-  from {
-    transform: scaleY(1);
-  }
-  to {
-    transform: scaleY(1.012);
-  }
-}
-
-.artBreathe {
-  transform-box: fill-box;
-  /* 바닥에 닿은 채로 등만 오르내립니다. */
-  transform-origin: bottom center;
-  animation: introBreathe 4.5s ease-in-out infinite alternate;
-}
-
-/*
- * 2장 — 카드 밖의 점이 하나씩 나타나 이어집니다.
- *
- * 기록이 쌓여 흐름이 된다는 말을 움직임으로 한 번 더 합니다. 점들이
- * 차례로 켜지고, 다 켜진 뒤 잠시 머물다가 처음으로 돌아갑니다.
- */
-@keyframes introFlowDot {
-  0%,
-  8% {
-    opacity: 0;
-    transform: translateY(3px);
-  }
-  24%,
-  86% {
-    opacity: 0.45;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(0);
-  }
-}
-
-.artFlowDot > * {
-  transform-box: fill-box;
-  animation: introFlowDot 7s ease-in-out infinite;
-}
-
-.artFlowDot > *:nth-child(1) {
-  animation-delay: 0s;
-}
-.artFlowDot > *:nth-child(2) {
-  animation-delay: 0.5s;
-}
-.artFlowDot > *:nth-child(3) {
-  animation-delay: 1s;
-}
-.artFlowDot > *:nth-child(4) {
-  animation-delay: 1.5s;
-}
-
-/* 3장 — 공기 중의 빛이 아주 천천히 떠오릅니다. */
-@keyframes introSpark {
-  0% {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  35%,
-  65% {
-    opacity: 0.28;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-}
-
-.artSpark > * {
-  transform-box: fill-box;
-  animation: introSpark 9s ease-in-out infinite;
-}
-
-.artSpark > *:nth-child(2) {
-  animation-delay: -3s;
-}
-.artSpark > *:nth-child(3) {
-  animation-delay: -6s;
-}
-
-/*
- * **움직임을 원하지 않는 사람에게는 전부 멈춥니다.**
- *
- * 전정 장애가 있는 사람에게 미세한 반복 움직임은 어지럼을 일으킬 수
- * 있습니다. 이 그림들은 정지 상태로도 완결이라 잃는 것이 없습니다.
- */
-@media (prefers-reduced-motion: reduce) {
-  .artLight > *,
-  ellipse.artLight,
-  .artBreathe,
-  .artFlowDot > *,
-  .artSpark > * {
-    animation: none;
-  }
 }

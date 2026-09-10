@@ -4,16 +4,8 @@ import { copy } from '../../copy'
 import { repo } from '../../data'
 import { PET_NEW_PATH } from '../../app/routes'
 import { Button } from '../../ui'
-import { ArtCardInHand, ArtWalkingTogether, ArtWindowLight } from './IntroArt'
+import { IntroMedia } from './IntroMedia'
 import styles from './intro.module.css'
-
-/**
- * 장 순서대로의 일러스트. `copy.intro.pages` 와 같은 순서여야 합니다.
- *
- * `IntroArt.tsx` 가 아니라 여기 두는 이유는 그 파일이 컴포넌트만 내보내야
- * Fast Refresh 가 부분 갱신을 하기 때문입니다 (그 파일 끝 주석 참고).
- */
-const ART = [ArtWindowLight, ArtCardInHand, ArtWalkingTogether] as const
 
 /**
  * 인트로 3장 (CONTEXT 5-2 · PRD FR-1).
@@ -27,9 +19,9 @@ const ART = [ArtWindowLight, ArtCardInHand, ArtWalkingTogether] as const
  *
  * ## 일러스트
  *
- * `IntroArt.tsx` 의 SVG 세 장입니다. CONTEXT 5-2 가 문장으로 지시한 장면을
- * 최소한의 선과 면으로 그린 것이고, 진짜 일러스트가 생기면(⚠️ PRD U9)
- * 그 파일의 컴포넌트만 갈아치우면 이 화면은 건드릴 일이 없습니다.
+ * `IntroMedia.tsx` 의 움직이는 그림 세 장입니다 (960×960 · 5초 루프 ·
+ * 무음). 이 화면은 장 번호만 넘기고, 재생·미리 받기·움직임 줄이기 설정은
+ * 전부 그쪽이 맡습니다.
  *
  * 세 그림 다 장식이라 `aria-hidden` 입니다 — 문장이 이미 같은 말을 하고
  * 있어서 대체 텍스트를 붙이면 스크린리더가 같은 내용을 두 번 읽습니다.
@@ -63,8 +55,7 @@ export function IntroScreen() {
     navigate(PET_NEW_PATH, { replace: true })
   }
 
-  const Art = ART[step]
-  if (page === undefined || Art === undefined) return null
+  if (page === undefined) return null
 
   return (
     <div className={styles.page}>
@@ -78,13 +69,13 @@ export function IntroScreen() {
       {/*
         일러스트. 장식이라 접근성 트리에서 뺍니다 — 문장이 같은 말을 합니다.
 
-        `.artFrame` 이 **정사각형**이고 둥근 모서리로 잘립니다. 일러스트
-        이미지(1440×1440)가 들어오면 이 안의 `<Art />` 자리를 `<img>` 로
-        바꾸면 됩니다 — 화면도 CSS 도 그대로입니다.
+        `.artFrame` 이 칸을 꽉 채우고 둥근 모서리로 잘립니다. 정사각 영상이
+        정사각이 아닌 칸에 들어가므로 넘치는 쪽이 잘립니다 (`.artFrame`
+        주석의 표 참고).
       */}
       <div className={styles.art} aria-hidden>
         <div className={styles.artFrame}>
-          <Art />
+          <IntroMedia step={step} />
         </div>
       </div>
 
