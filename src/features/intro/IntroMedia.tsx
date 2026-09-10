@@ -67,15 +67,21 @@ import styles from './intro.module.css'
  * 화면에서 위아래 각 10% 입니다. 자세한 표는 `intro.module.css` 의
  * `.artFrame` 주석에 있습니다.
  *
- * ## 움직임을 원하지 않는 사람에게는 멈춥니다
+ * ## 움직임을 원하지 않는 사람에게는 그림만
  *
- * `prefers-reduced-motion: reduce` 면 자동 재생하지 않고 **첫 프레임에서
- * 멈춥니다.** 전정 장애가 있는 사람에게 반복 움직임은 어지럼을 일으킬 수
- * 있고, 이 그림들은 정지 상태로도 완결입니다.
+ * `prefers-reduced-motion: reduce` 면 **영상을 아예 부르지 않고 포스터
+ * 이미지만 보여 줍니다.** 전정 장애가 있는 사람에게 반복 움직임은 어지럼을
+ * 일으킬 수 있고, 이 그림들은 정지 상태로도 완결입니다.
  *
- * 멈춘 상태에서 화면이 비지 않게 `currentTime` 을 아주 조금 옮깁니다 —
- * 브라우저가 프레임을 실제로 그리게 만드는 유일한 확실한 방법입니다.
- * `preload` 만으로는 검은 화면이나 빈 화면이 남는 브라우저가 있습니다.
+ * iOS 의 「동작 줄이기」가 그 설정입니다. **흔하게 켜져 있어서 이 경로는
+ * 예외가 아닙니다** — 그 사람들에게 796KB 를 받게 하지 않는 것이 이
+ * 분기의 절반입니다.
+ *
+ * ## 자동 재생이 막히는 경우
+ *
+ * 저전력 모드, Safari 의 자동 재생 설정 같은 것들이 `play()` 를 거부합니다.
+ * 그때는 포스터가 그림으로 남고, **화면을 한 번 만지면 다시 시도해서
+ * 살립니다** — 제스처 뒤에는 같은 호출이 허용됩니다.
  */
 
 /** 장 순서대로. `copy.intro.pages` 와 같은 순서여야 합니다. */
@@ -157,44 +163,58 @@ export function IntroMedia({ step }: IntroMediaProps) {
    * 다음 장의 영상을 미리 받아 둡니다.
    *
    * 화면에는 지금 장의 영상 하나만 있습니다(`IntroScreen` 이 현재 장만
-   * 그립니다). 그래서 [다음]을 누르면 그 자리에서 720KB 를 새로 받기
-   * 시작하고, 받는 동안 그림 자리가 빈 채로 남습니다.
+   * 그립니다). 그래서 [다음]을 누르면 그 자리에서 200KB 를 새로 받기
+   * 시작하고, 받는 동안 포스터가 그 자리를 지킵니다.
    *
    * 응답을 쓰지 않고 버립니다 — 목적은 브라우저 HTTP 캐시에 넣는 것이고,
    * 실제 재생은 `<video>` 가 같은 주소로 다시 요청해 캐시에서 가져옵니다.
    * **중단하지 않습니다.** 장을 넘기는 순간 취소되면 미리 받은 뜻이
    * 없어집니다.
+   *
+   * **움직임을 줄이라고 한 사람에게는 받지 않습니다.** 재생하지 않을
+   * 영상입니다.
    */
   useEffect(() => {
+    if (reduced) return
     const next = SOURCES[step + 1]
     if (next === undefined) return
     void fetch(next).catch(() => {
       // 미리 받기가 실패해도 재생은 됩니다. 조금 늦어질 뿐입니다.
     })
-  }, [step])
+  }, [step, reduced])
 
+  /**
+   * `autoPlay` 만으로 되지 않는 브라우저가 있어 한 번 더 부릅니다.
+   * 저전력 모드처럼 재생이 막히는 상황에서는 실패하는데, 그때는 포스터가
+   * 그림으로 남고 사용자가 화면을 만지면 위의 재시도가 살립니다.
+   */
   const onLoadedData = () => {
     const element = video.current
     if (element === null) return
-    if (reduced) {
-      /**
-       * 멈춘 채로 첫 프레임을 그리게 합니다. 0 으로 두면 브라우저가
-       * "이미 그 자리"라고 보고 아무것도 그리지 않아 빈 화면이 남습니다.
-       */
-      element.currentTime = 0.01
-      return
-    }
-    /**
-     * `autoPlay` 만으로 되지 않는 브라우저가 있어 한 번 더 부릅니다.
-     * 저전력 모드처럼 재생이 막히는 상황에서는 실패하는데, 그때는 첫
-     * 프레임이 정지 화면으로 남습니다 — 받아들일 수 있는 결과입니다.
-     */
     void element.play().catch(() => {
-      element.currentTime = 0.01
+      // 포스터가 그 자리를 지킵니다.
     })
   }
 
   if (src === undefined || poster === undefined) return null
+
+  /**
+   * **움직임을 줄이라고 한 사람에게는 영상을 아예 받지 않습니다.**
+   *
+   * 처음에는 `<video>` 를 그대로 두고 자동 재생만 끄고 첫 프레임에서
+   * 멈췄습니다. 화면은 맞았지만 **재생하지도 않을 796KB 를 그대로
+   * 내려받았습니다.** 포스터가 그 첫 프레임과 같은 그림이므로 영상을
+   * 부를 이유가 없습니다.
+   *
+   * 79KB 로 끝나고, `currentTime` 을 밀어 프레임을 그리게 하는 요령도
+   * 필요 없어집니다. iOS 의 「동작 줄이기」는 흔하게 켜져 있어서 이 경로가
+   * 예외가 아닙니다.
+   *
+   * 설정을 도중에 끄면 `reduced` 가 바뀌어 `<video>` 로 갈아탑니다.
+   */
+  if (reduced) {
+    return <img className={styles.artMedia} src={poster} alt="" draggable={false} />
+  }
 
   return (
     <video
@@ -240,7 +260,7 @@ export function IntroMedia({ step }: IntroMediaProps) {
       muted
       loop
       playsInline
-      autoPlay={!reduced}
+      autoPlay
       preload="auto"
       onLoadedData={onLoadedData}
       /** 그림입니다. 재생 조작을 노출하지 않습니다. */
