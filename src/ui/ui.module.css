@@ -1,0 +1,240 @@
+/*
+ * 공용 UI 부품의 스타일 (U02).
+ *
+ * 색상은 전부 tokens.css 의 var(--*) 로만 씁니다. 이 파일에 색상 리터럴
+ * (#, rgb(, 색상 키워드)이 0건인 것이 U02 완료 판정 항목입니다.
+ * 8개 컴포넌트를 한 파일에 모아 둔 이유는 그 검사 지점을 하나로 두기 위해서입니다.
+ *
+ * 크기는 rem 으로 두어 브라우저 글꼴 확대를 따라갑니다 (NFR-A A-1).
+ * 터치 타깃은 var(--tap-min) 하한을 넘깁니다 (NFR-A A-2).
+ * 애니메이션은 U02 범위 밖이라 전환 효과를 넣지 않았습니다.
+ */
+
+/* ── Button ─────────────────────────────────────────────── */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
+  padding: 0.5rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.buttonPrimary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+}
+
+.buttonSecondary {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.buttonBlock {
+  display: flex;
+  width: 100%;
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.cardTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ── Sheet (바텀시트) ───────────────────────────────────── */
+
+.sheet {
+  width: 100%;
+  max-width: 32rem;
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 1rem 1rem 0 0;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.sheet::backdrop {
+  background: var(--text);
+  opacity: 0.4;
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.sheetTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sheetBody {
+  padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+.sheetClose {
+  flex: 0 0 auto;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* ── Dots (주간 점) ─────────────────────────────────────── */
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dot {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid var(--dot-good);
+}
+
+/* 좋은 날 — 채운 점 */
+.dotGood {
+  background: var(--dot-good);
+}
+
+/* 보통 — 빈 점 (테두리만). 색이 아니라 '채움 여부'가 정보입니다 (NFR-A A-4) */
+.dotOkay {
+  background: var(--dot-okay);
+}
+
+/*
+ * 미기록 — 작고 옅은 점 (U11).
+ * 아직 기록하지 않은 날입니다. **비어 있음이지 나쁨이 아니라서** 회색(힘든
+ * 날)보다 옅고 작게 둡니다. 테두리를 지우고 크기를 줄여, 색을 못 보는
+ * 사람에게도 다른 모양으로 읽힙니다 (NFR-A A-4).
+ */
+.dotNone {
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 0;
+  background: var(--line);
+}
+
+/* 힘든 날 — 회색 점 */
+.dotHard {
+  background: var(--dot-hard);
+  border-color: var(--dot-hard);
+}
+
+/* ── Field ──────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fieldLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.fieldControl {
+  min-height: var(--tap-min);
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.fieldHint {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* ── Toast ──────────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 10;
+  max-width: calc(100% - 2rem);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+/* ── TabBar ─────────────────────────────────────────────── */
+
+.tabBar {
+  display: flex;
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 0.5rem 0.25rem;
+  text-decoration: none;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* 활성 탭은 색만으로 구분하지 않습니다 (NFR-A A-4). 굵기도 함께 바뀝니다. */
+.tabActive {
+  color: var(--text);
+  font-weight: 700;
+}

@@ -1,0 +1,38 @@
+{
+  "name": "mgds-mvp-lite",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && npm run check:bundle",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint:copy": "node scripts/lint-copy.mjs",
+    "lint:hangul": "node scripts/lint-hangul.mjs",
+    "lint:color": "node scripts/lint-color.mjs",
+    "lint:thanks": "node scripts/lint-thanks.mjs",
+    "lint:hard": "node scripts/lint-hard-count.mjs",
+    "lint:principles": "npm run lint:copy && npm run lint:hangul && npm run lint:color && npm run lint:thanks && npm run lint:hard",
+    "check:bundle": "node scripts/check-bundle.mjs"
+  },
+  "dependencies": {
+    "dexie": "4.4.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "7.18.3"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "@vitest/coverage-v8": "5.0.0",
+    "fake-indexeddb": "6.2.5",
+    "typescript": "5.9.3",
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
+  }
+}

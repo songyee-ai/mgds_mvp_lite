@@ -1,0 +1,77 @@
+/*
+ * 디자인 토큰 — TECH_SPEC 14.
+ *
+ * 색상값은 자리표시입니다. PRD U6(컬러·톤)이 확정되면 이 파일의 값만 바꿉니다.
+ * 컴포넌트 쪽에는 색상 리터럴을 두지 않으므로 교체 지점이 여기 하나입니다.
+ *
+ * --dot-* 에 빨강 계열이 없습니다. 팔레트에 없으므로 실수로 쓸 수 없습니다.
+ * (PRD 원칙 P6 · PRD 11-3 · NFR-A A-4)
+ */
+
+:root {
+  /* 다크 모드는 MVP 범위 밖입니다 (TECH_SPEC 14). */
+  color-scheme: light;
+
+  /* 상태 표시 — 빨간색이 존재하지 않는다 */
+  --dot-good: #4a5d4e;      /* 채운 점 */
+  --dot-okay: transparent;  /* 빈 점 (테두리만) */
+  --dot-hard: #b9b9b4;      /* 회색 점 */
+
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --text: #2b2a28;
+  --text-muted: #6f6c67;
+  --accent: #6b7f6e;
+  --line: #e6e2db;
+
+  /* 파괴적 동작(아이 삭제 등)에만 쓰는 색. 상태 표시에 쓰지 않는다 */
+  --danger-text: #8a5a4a;
+
+  --tap-min: 44px;
+  --font-body: 16px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* 가로 모드에서 브라우저가 본문을 임의로 키우지 않게 합니다. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  /*
+   * NFR-A A-1: 본문 최소 16px, 그리고 사용자 글꼴 확대 설정을 따른다.
+   * 토큰을 그대로 쓰면(16px 절대값) 브라우저 '글꼴 크기' 설정을 무시하므로
+   * 하한으로만 씁니다. 기본 설정에서는 정확히 16px 입니다.
+   */
+  font-size: max(var(--font-body), 1rem);
+  line-height: 1.5;
+  font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+/*
+ * 링크 (라이트 버전에서 더함).
+ *
+ * 브라우저 기본값은 파란 글씨 + 밑줄입니다. 팔레트에 없는 색이 화면에
+ * 나타나는 유일한 구멍이었고(`lint-color` 는 CSS 에 적힌 색만 봅니다),
+ * 홈의 [고치기]와 백업 링크가 그 파란색으로 떠 있었습니다.
+ *
+ * 밑줄은 남깁니다 — 색만으로 링크를 구분하면 색각 이상에서 링크가 사라집니다
+ * (NFR-A A-4 가 상태 표시에 색만 쓰지 못하게 하는 것과 같은 이유).
+ */
+a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

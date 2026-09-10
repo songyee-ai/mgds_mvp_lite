@@ -1,0 +1,35 @@
+/*
+ * /dev/ui 카탈로그의 레이아웃. 개발용이라 프로덕션 번들에 들어가지 않습니다
+ * (WORK_UNITS 1-5). 색상 선언 없이 간격만 잡습니다.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.measure {
+  /* 44px 자를 겹쳐 눈으로 재기 위한 상자. */
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border: 1px dashed var(--line);
+}

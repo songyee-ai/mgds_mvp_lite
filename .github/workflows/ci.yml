@@ -1,0 +1,39 @@
+# 원칙 검사 · 테스트 · 빌드.
+#
+# README 의 「무엇을 만들지 않았는가」 표가 약속이 아니라 검사라고 말하는
+# 근거가 이 워크플로입니다. `lint:principles` 가 여기서 돌지 않으면 그 표는
+# 그냥 문장입니다.
+#
+# 순서에 뜻이 있습니다 — 타입 검사가 가장 빠르고, 원칙 검사가 그다음이며,
+# 빌드는 번들 예산 검사를 품고 있어 마지막입니다.
+name: test · lint:principles · build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # package-lock.json 을 그대로 따릅니다. `npm install` 은 잠금을
+      # 바꿀 수 있어 CI 가 로컬과 다른 것을 검사하게 됩니다.
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm run lint:principles
+
+      # 도메인 커버리지 100% 임계값이 vite.config.ts 에 있습니다.
+      - run: npm run test:coverage
+
+      # 타입 검사 → 빌드 → 초기 JS 예산(gzip 150kB). 넘으면 실패합니다.
+      - run: npm run build

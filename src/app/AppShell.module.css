@@ -1,0 +1,16 @@
+/*
+ * 셸의 레이아웃만 정의합니다. 색상은 tokens.css 의 body 규칙과
+ * TabBar 가 각각 맡습니다.
+ */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.main {
+  flex: 1 1 auto;
+  padding: 1rem;
+  overflow-y: auto;
+}

@@ -1,0 +1,32 @@
+# 의존성 · 빌드 산출물
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.local
+
+# E2E 산출물 (U08)
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# 환경 변수 (TECH_SPEC 17-2)
+# VITE_ 접두사가 없는 변수는 서버 전용입니다. 어떤 .env 파일도 커밋하지 않습니다.
+.env
+.env.*
+!.env.example
+
+# 배포 도구
+.vercel
+
+# 에디터 · 에이전트 로컬 상태
+.claude/
+.omc/
+!.omc/skills/
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

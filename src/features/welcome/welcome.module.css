@@ -1,0 +1,57 @@
+/*
+ * 온보딩 마무리 1장. 색상은 tokens.css 의 커스텀 속성만 씁니다.
+ *
+ * 인트로처럼 화면 하나를 채우되, 그림 자리가 없어 문장이 위에 붙고
+ * 버튼이 아래에 남습니다.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 2rem);
+  gap: 1.5rem;
+}
+
+/*
+ * 문장 영역.
+ *
+ * 남는 자리는 이 블록이 아니라 버튼 위(`.page > button`)가 먹습니다.
+ * 여기서 늘리면 문장과 고지 카드 사이가 벌어져 둘이 다른 화면처럼 보입니다.
+ */
+.body {
+  flex: 0 0 auto;
+  padding-top: 2rem;
+}
+
+/*
+ * 버튼을 화면 아래로 밀어 둡니다. 엄지가 닿는 자리이고, 위의 고지를 읽는
+ * 동안 버튼이 문장에 붙어 따라오지 않게 합니다.
+ */
+.page > button {
+  margin-top: auto;
+}
+
+.title {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  line-height: 1.35;
+}
+
+.line {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.hint {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+}
+
+/*
+ * 고지 본문. 본문 하한 16px 을 그대로 씁니다 (NFR-A A-1) —
+ * 고지를 작은 글씨로 두면 고지한 척이 됩니다.
+ */
+.notice {
+  margin: 0;
+  color: var(--text-muted);
+}

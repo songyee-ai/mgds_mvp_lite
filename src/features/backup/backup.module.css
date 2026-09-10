@@ -1,0 +1,119 @@
+/*
+ * 데이터 백업 화면의 레이아웃 (U09).
+ *
+ * 색상은 토큰만 씁니다. 리터럴을 두면 `lint-color` 가 잡습니다.
+ * 정식 화면은 U30 이라 여기서는 읽을 수 있는 최소한만 둡니다.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.note {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* 진입점 1줄. 링크지만 터치 타깃 하한은 지킵니다 (NFR-A A-2). */
+.entry {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.entry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 사진 포함 토글. 체크박스와 라벨을 한 덩어리로 묶습니다. */
+.check {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  gap: 0.5rem;
+}
+
+.checkBox {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* 파일 고르기. input[type=file] 을 라벨로 감싸 타깃을 넓힙니다. */
+.pick {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.pick:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pickInput {
+  /* 라벨이 타깃이므로 실제 입력은 숨깁니다. 접근성 트리에는 남습니다. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 보고서 표. 좁은 화면에서 가로로 흐르게 둡니다. */
+.reportScroll {
+  overflow-x: auto;
+}
+
+.report {
+  border-collapse: collapse;
+  min-width: 100%;
+}
+
+.report th,
+.report td {
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.report th:first-child,
+.report td:first-child {
+  text-align: left;
+}
+
+.reportTotal {
+  font-weight: 600;
+}
