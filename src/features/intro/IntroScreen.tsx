@@ -4,7 +4,16 @@ import { copy } from '../../copy'
 import { repo } from '../../data'
 import { PET_NEW_PATH } from '../../app/routes'
 import { Button } from '../../ui'
+import { ArtCardInHand, ArtWalkingTogether, ArtWindowLight } from './IntroArt'
 import styles from './intro.module.css'
+
+/**
+ * 장 순서대로의 일러스트. `copy.intro.pages` 와 같은 순서여야 합니다.
+ *
+ * `IntroArt.tsx` 가 아니라 여기 두는 이유는 그 파일이 컴포넌트만 내보내야
+ * Fast Refresh 가 부분 갱신을 하기 때문입니다 (그 파일 끝 주석 참고).
+ */
+const ART = [ArtWindowLight, ArtCardInHand, ArtWalkingTogether] as const
 
 /**
  * 인트로 3장 (CONTEXT 5-2 · PRD FR-1).
@@ -16,14 +25,18 @@ import styles from './intro.module.css'
  * 문구는 `copy/ko.ts` 의 `intro` 가 정본이고 이 파일에는 한글이 없습니다
  * (`lint-hangul` 이 막습니다).
  *
- * ## 일러스트가 없습니다
+ * ## 일러스트
  *
- * 자리표시자입니다 — WORK_UNITS U31 의 "하지 않을 것"에 일러스트 제작이
- * 들어 있고 ⚠️ PRD U9 로 열려 있습니다. 지금은 장마다 다른 배경 도형이
- * 들어가고, 그림이 생기면 `.art` 안을 바꾸면 됩니다.
+ * `IntroArt.tsx` 의 SVG 세 장입니다. CONTEXT 5-2 가 문장으로 지시한 장면을
+ * 최소한의 선과 면으로 그린 것이고, 진짜 일러스트가 생기면(⚠️ PRD U9)
+ * 그 파일의 컴포넌트만 갈아치우면 이 화면은 건드릴 일이 없습니다.
  *
- * `art` 문구는 화면에 나오지 않습니다. 어떤 그림이 들어갈 자리인지를
- * 카피 파일에 적어 둔 것이라 `aria-hidden` 인 도형의 형제로도 두지 않습니다.
+ * 세 그림 다 장식이라 `aria-hidden` 입니다 — 문장이 이미 같은 말을 하고
+ * 있어서 대체 텍스트를 붙이면 스크린리더가 같은 내용을 두 번 읽습니다.
+ *
+ * `copy.intro.pages[].art` 문구는 **화면에 나오지 않습니다.** 어떤 그림이
+ * 들어갈 자리인지를 카피 파일에 남긴 메모이고, 감수하는 사람이 그림과
+ * 문장을 함께 보게 하려고 둔 것입니다.
  *
  * ## 지나간 뒤에는 다시 오지 않습니다
  *
@@ -50,7 +63,8 @@ export function IntroScreen() {
     navigate(PET_NEW_PATH, { replace: true })
   }
 
-  if (page === undefined) return null
+  const Art = ART[step]
+  if (page === undefined || Art === undefined) return null
 
   return (
     <div className={styles.page}>
@@ -61,8 +75,10 @@ export function IntroScreen() {
         </button>
       </div>
 
-      {/* 일러스트 자리. 장마다 다른 도형이 들어갑니다 (⚠️ PRD U9). */}
-      <div className={[styles.art, styles[`art${step + 1}`]].filter(Boolean).join(' ')} aria-hidden />
+      {/* 일러스트. 장식이라 접근성 트리에서 뺍니다 — 문장이 같은 말을 합니다. */}
+      <div className={styles.art} aria-hidden>
+        <Art />
+      </div>
 
       <div className={styles.body}>
         <h1 className={styles.title}>{page.title}</h1>
