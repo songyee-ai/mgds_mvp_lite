@@ -15,6 +15,19 @@ on:
 
 jobs:
   check:
+    # ⚠️ 이 이름을 바꾸지 마세요.
+    #
+    # GitHub 이 상태 검사로 보고하는 이름은 워크플로 이름이 아니라 **잡
+    # 이름**이고, 이 문자열이 `main` 브랜치 룰셋의 **필수 상태 검사
+    # 이름입니다.** 바꾸면 룰셋이 존재하지 않는 검사를 기다리게 되어
+    # `main` 으로 아무것도 올라가지 못합니다.
+    #
+    # 고쳐야 한다면 룰셋을 먼저 고치세요:
+    #   gh api repos/songyee-ai/mgds_mvp_lite/rulesets
+    #
+    # 이름 자체는 본 MVP(mgds_mvp)와 같은 문자열입니다. 두 저장소를
+    # 오갈 때 같은 규약이 통하게 두었습니다.
+    name: test · lint:principles · build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
