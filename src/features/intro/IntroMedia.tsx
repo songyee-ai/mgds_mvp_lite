@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import intro1 from './assets/intro-1.mp4'
 import intro2 from './assets/intro-2.mp4'
 import intro3 from './assets/intro-3.mp4'
+import poster1 from './assets/intro-1-poster.webp'
+import poster2 from './assets/intro-2-poster.webp'
+import poster3 from './assets/intro-3-poster.webp'
 import styles from './intro.module.css'
 
 /**
@@ -79,6 +82,15 @@ import styles from './intro.module.css'
 const SOURCES = [intro1, intro2, intro3] as const
 
 /**
+ * 각 영상의 첫 프레임. 같은 순서입니다.
+ *
+ * `ffmpeg -i intro-N.mp4 -frames:v 1 -c:v libwebp -quality 82 intro-N-poster.webp`
+ *
+ * 25 / 19 / 37 KB. 왜 필요한지는 `<video poster>` 쪽 주석에 있습니다.
+ */
+const POSTERS = [poster1, poster2, poster3] as const
+
+/**
  * 움직임을 줄이라는 설정을 보고 있는지.
  *
  * 마운트 때 한 번만 읽지 않고 구독합니다 — 사용자가 설정을 바꾸면 그
@@ -109,6 +121,37 @@ export function IntroMedia({ step }: IntroMediaProps) {
   const reduced = useReducedMotion()
   const video = useRef<HTMLVideoElement | null>(null)
   const src = SOURCES[step]
+  const poster = POSTERS[step]
+
+  /**
+   * 화면을 한 번 만지면 멈춰 있는 영상을 다시 재생해 봅니다.
+   *
+   * **실기기에서 2·3장이 정지 화면으로 나왔습니다.** iOS 는 저전력 모드,
+   * 손쉬운 사용의 「동작 줄이기」, Safari 의 자동 재생 설정 중 하나만
+   * 켜져 있어도 자동 재생을 막습니다. 그때 `play()` 가 거부되고 첫
+   * 프레임만 남습니다.
+   *
+   * **사용자 제스처 뒤에는 같은 `play()` 가 허용됩니다.** 그래서 한 번
+   * 만지면 다시 부릅니다. 인트로는 [다음]을 눌러야 넘어가므로 2장부터는
+   * 사실상 항상 움직입니다.
+   *
+   * `prefers-reduced-motion` 이 켜진 사람에게는 시도하지 않습니다 —
+   * 그건 막힌 것이 아니라 요청받은 것입니다.
+   */
+  useEffect(() => {
+    if (reduced) return
+    const retry = () => {
+      const element = video.current
+      if (element !== null && element.paused) {
+        void element.play().catch(() => {
+          // 계속 막혀 있으면 포스터가 그 자리를 지킵니다.
+        })
+      }
+    }
+    // `pointerdown` 하나로 터치와 마우스를 다 받습니다.
+    window.addEventListener('pointerdown', retry)
+    return () => window.removeEventListener('pointerdown', retry)
+  }, [reduced])
 
   /**
    * 다음 장의 영상을 미리 받아 둡니다.
@@ -151,7 +194,7 @@ export function IntroMedia({ step }: IntroMediaProps) {
     })
   }
 
-  if (src === undefined) return null
+  if (src === undefined || poster === undefined) return null
 
   return (
     <video
@@ -160,9 +203,40 @@ export function IntroMedia({ step }: IntroMediaProps) {
        * 프레임이 잠깐 남습니다.
        */
       key={src}
-      ref={video}
+      /**
+       * **`muted` 를 속성으로도 직접 박습니다.**
+       *
+       * React 는 `muted` 를 DOM 속성(property)으로만 설정하고 HTML
+       * 어트리뷰트는 남기지 않습니다. iOS Safari 는 자동 재생 자격을
+       * **어트리뷰트로** 판단하는 경로가 있어서, React 로 만든 무음
+       * 영상이 아이폰에서 자동 재생되지 않는 일이 생깁니다.
+       *
+       * 둘 다 해 둡니다. 손해가 없습니다.
+       */
+      ref={(element) => {
+        video.current = element
+        if (element === null) return
+        element.muted = true
+        element.setAttribute('muted', '')
+      }}
       className={styles.artMedia}
       src={src}
+      /**
+       * **첫 프레임을 이미지로 미리 깔아 둡니다.**
+       *
+       * 실기기에서 1장이 아예 비어 있었습니다. iOS 는 `preload="auto"` 를
+       * 무시하고 재생이 시작될 때까지 데이터를 받지 않는 경우가 많은데,
+       * 자동 재생까지 막혀 있으면 프레임이 한 장도 디코딩되지 않아
+       * **그림이 없는 상태로 남습니다.**
+       *
+       * 2·3장은 다음 장 미리 받기 덕에 캐시에 있어서 프레임이 나왔고,
+       * 1장만 비었던 것이 그 증거입니다.
+       *
+       * 포스터는 25~37KB 짜리 WebP 라 즉시 뜨고, 영상이 준비되면 그 위를
+       * 덮습니다. 재생이 끝까지 막히는 기기에서는 이 이미지가 그림으로
+       * 남습니다 — 정지 상태로도 완결이라 잃는 것이 없습니다.
+       */
+      poster={poster}
       muted
       loop
       playsInline
