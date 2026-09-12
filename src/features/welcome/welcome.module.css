@@ -8,7 +8,14 @@
 .page {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 2rem);
+  /*
+   * 화면 하나를 채웁니다. 빼는 것 셋 — 셸의 위아래 여백(2rem), 로고
+   * 머리줄(`--shell-header`), 머리줄과 화면 사이 간격(1rem).
+   *
+   * **머리줄을 넣으면서 이 식을 함께 고쳤습니다.** 안 고쳤더니 딱 그 둘의
+   * 합인 67px 만큼 아래로 넘쳤습니다.
+   */
+  min-height: calc(100dvh - 2rem - var(--shell-header) - 1rem);
   gap: 1.5rem;
 }
 

@@ -23,14 +23,16 @@
 .page {
   display: grid;
   /*
-   * 문단 칸이 `minmax(고정, auto)` 입니다 — 고정 높이를 하한으로 두고,
-   * 그보다 더 필요하면 자랍니다.
+   * 세 칸입니다 — 그림 · 문단 · 버튼줄. **건너뛰기 줄이 없습니다.**
+   * 로고와 같은 줄로 올라가 셸의 머리줄에 있습니다 (`app/AppShell`).
    *
-   * 정확히 고정으로 두면 아주 좁은 화면에서 제목이 두 줄로 갈릴 때 문단이
-   * 자기 칸을 넘쳐 버튼과 겹칩니다. 하한으로 두면 평소에는 세 장의 위치가
-   * 같고, 넘칠 때만 그림 칸을 조금 내주고 겹치지 않습니다.
+   * 문단 칸이 `minmax(고정, auto)` 입니다 — 고정 높이를 하한으로 두고,
+   * 그보다 더 필요하면 자랍니다. 정확히 고정으로 두면 아주 좁은 화면에서
+   * 제목이 두 줄로 갈릴 때 문단이 자기 칸을 넘쳐 버튼과 겹칩니다.
+   * 하한으로 두면 평소에는 세 장의 위치가 같고, 넘칠 때만 그림 칸을
+   * 조금 내주고 겹치지 않습니다.
    */
-  grid-template-rows: auto minmax(0, 1fr) minmax(var(--intro-body-height), auto) auto;
+  grid-template-rows: minmax(0, 1fr) minmax(var(--intro-body-height), auto) auto;
   /*
    * **`min-height` 가 아니라 `height` 입니다.**
    *
@@ -40,10 +42,11 @@
    * 사라졌습니다 — 실제로 그림 칸 높이가 0px 이 되고 아래로 185px 이
    * 넘쳤습니다.
    *
-   * 확정 높이를 주면 `1fr` 이 남는 세로를 받습니다. 셸의 좌우 여백(1rem)을
-   * 빼서 화면 높이에 정확히 맞춥니다.
+   * 빼는 것 세 가지: 셸의 위아래 여백(2rem), 로고 머리줄(`--shell-header`),
+   * 머리줄과 화면 사이 간격(1rem, `AppShell.module.css` 의 `.header`
+   * `margin-bottom`). **그 간격을 바꾸면 여기도 바꿔야 합니다.**
    */
-  height: calc(100dvh - 2rem);
+  height: calc(100dvh - 2rem - var(--shell-header) - 1rem);
   gap: 1rem;
 
   /*
@@ -54,6 +57,13 @@
    * 모자라면 문단이 그림 칸을 밀고 올라가 고정이 깨집니다.
    */
   --intro-body-height: 13.25rem;
+
+  /*
+   * 그림 칸 아래가 쓰는 세로의 합 — 문단 칸 + 버튼줄(84px) + 간격 둘(2rem).
+   * `.artFrame` 의 높이 상한이 이 값을 씁니다. 한 군데만 두어 둘이
+   * 어긋나지 않게 합니다.
+   */
+  --intro-below-art: calc(var(--intro-body-height) + 84px + 2rem);
 }
 
 /* 세로가 아주 짧은 화면에서는 문단 칸을 줄여 그림 칸을 지킵니다. */
@@ -63,14 +73,24 @@
   }
 }
 
-.topBar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-start;
-}
-
-/* "우측 상단에 작게". 작아도 터치 타깃은 44px 입니다 (NFR-A A-2). */
+/*
+ * 건너뛰기. **셸 머리줄의 오른쪽 칸에 포털로 들어갑니다** — 이 파일에
+ * 있는 것은 그 자리에서 어떻게 보일지뿐입니다.
+ *
+ * ## 로고 아랫선에 글자를 맞춥니다
+ *
+ * 머리줄 높이는 로고가 정하고(51px), 이 버튼은 44px 입니다. 가운데 두면
+ * 글자가 로고 아랫선보다 15px 위에 떠서 둘이 따로 놉니다.
+ *
+ * `align-self: end` 만으로는 부족합니다 — 상자의 아래가 맞을 뿐 글자는
+ * 44px 상자의 가운데라 여전히 11px 위입니다. **글자를 맞추려면 상자를
+ * 12px 더 내려야 합니다.**
+ *
+ * `transform` 이라 레이아웃에 영향이 없습니다. 그림 크기는 그대로입니다.
+ */
 .skip {
+  align-self: end;
+  transform: translateY(12px);
   min-height: var(--tap-min);
   padding: 0 0.5rem;
   border: 0;
@@ -79,6 +99,8 @@
   font: inherit;
   font-size: 0.875rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 /*
@@ -141,12 +163,20 @@
   width: 100%;
   height: 100%;
   /*
-   * 높이 상한 = 폭 × 1.25. 폭은 `min(화면폭 - 여백, 셸 상한)` 이라
-   * 여기서 같은 식으로 다시 계산합니다 — CSS 에서 자기 폭을 읽을 수는
-   * 없습니다. **셸의 `max-width`(30rem)나 좌우 여백을 바꾸면 이 식도
-   * 함께 바꿔야 합니다.**
+   * 높이 상한이 둘입니다. 작은 쪽이 이깁니다.
+   *
+   * 1. **폭 × 1.25** — 세로가 아주 긴 창에서 블록만 길어지는 것을 막습니다.
+   *    폭은 `min(화면폭 - 여백, 셸 상한)` 이라 같은 식으로 다시 계산합니다.
+   *    CSS 에서 자기 폭을 읽을 수는 없습니다. **셸의 `max-width`(30rem)나
+   *    좌우 여백을 바꾸면 이 식도 함께 바꿔야 합니다.**
+   * 2. **칸이 실제로 줄 수 있는 높이** — 화면에서 머리줄과 아래 칸들을
+   *    뺀 나머지입니다. `height: 100%` 가 grid 칸에서 풀리지 않아
+   *    직접 계산합니다.
    */
-  max-height: calc(1.25 * min(100vw - 2rem, 28rem));
+  max-height: min(
+    calc(1.25 * min(100vw - 2rem, 28rem)),
+    calc(100dvh - 2rem - var(--shell-header) - 1rem - var(--intro-below-art))
+  );
   border-radius: 1.25rem;
   overflow: hidden;
   background: var(--art-canvas);

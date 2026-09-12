@@ -238,3 +238,14 @@
   color: var(--text);
   font-weight: 700;
 }
+
+/*
+ * 로고 (`ui/Logo`). 크기는 토큰이 정합니다 — 그 이유는 그 파일 주석에.
+ * 높이를 지정하지 않는 이유는 원본 비율(1.866)을 그대로 따르게 두기
+ * 위해서입니다.
+ */
+.logo {
+  display: block;
+  width: var(--logo-w);
+  height: auto;
+}

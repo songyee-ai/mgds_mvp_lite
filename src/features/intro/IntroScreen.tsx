@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { copy } from '../../copy'
 import { repo } from '../../data'
 import { PET_NEW_PATH } from '../../app/routes'
+import { SHELL_HEADER_RIGHT_ID } from '../../app/AppShell'
 import { Button } from '../../ui'
 import { IntroMedia } from './IntroMedia'
 import styles from './intro.module.css'
@@ -46,6 +48,22 @@ export function IntroScreen() {
   const page = pages[step]
   const isLast = step === pages.length - 1
 
+  /**
+   * 건너뛰기가 들어갈 셸 머리줄의 오른쪽 칸.
+   *
+   * **로고와 같은 줄에 놓기 위해 포털을 씁니다.** 머리줄은 셸이 소유하고
+   * (`app/AppShell`), 이 화면은 그 오른쪽 칸만 빌립니다. 인트로 안에 따로
+   * 줄을 만들면 로고 아래에 또 한 줄이 생겨 44px 과 간격 16px 을 더 먹고,
+   * 그만큼 그림이 작아집니다.
+   *
+   * `useLayoutEffect` 인 이유는 그려지기 전에 자리를 잡기 위해서입니다 —
+   * `useEffect` 면 한 프레임 동안 건너뛰기가 없는 화면이 보입니다.
+   */
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    setHeaderSlot(document.getElementById(SHELL_HEADER_RIGHT_ID))
+  }, [])
+
   const leave = async () => {
     try {
       await repo.settings.set('intro_seen_at', new Date().toISOString())
@@ -59,12 +77,18 @@ export function IntroScreen() {
 
   return (
     <div className={styles.page}>
-      {/* 스킵은 우측 상단에 작게 (CONTEXT 5-2). */}
-      <div className={styles.topBar}>
-        <button type="button" className={styles.skip} onClick={() => void leave()}>
-          {copy.intro.skip}
-        </button>
-      </div>
+      {/*
+        건너뛰기는 "우측 상단에 작게" 입니다 (CONTEXT 5-2). 그 우측 상단이
+        이제 셸의 머리줄이라 그리로 보냅니다.
+      */}
+      {headerSlot === null
+        ? null
+        : createPortal(
+            <button type="button" className={styles.skip} onClick={() => void leave()}>
+              {copy.intro.skip}
+            </button>,
+            headerSlot,
+          )}
 
       {/*
         일러스트. 장식이라 접근성 트리에서 뺍니다 — 문장이 같은 말을 합니다.

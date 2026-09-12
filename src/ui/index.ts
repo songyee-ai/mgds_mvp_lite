@@ -6,6 +6,7 @@
  */
 export { Button, type ButtonProps, type ButtonVariant } from './Button'
 export { Card, type CardProps } from './Card'
+export { Logo } from './Logo'
 export { Sheet, type SheetProps } from './Sheet'
 export {
   Dots,
