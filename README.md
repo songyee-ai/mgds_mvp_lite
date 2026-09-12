@@ -155,6 +155,15 @@ npm run typecheck && npm run lint:principles && npm run test:coverage && npm run
 바꾸면 룰셋이 없는 검사를 기다리게 되어 `main` 이 잠깁니다. 이유는
 `.github/workflows/ci.yml` 주석에.
 
+## 이어서 작업할 때
+
+**[handoff/STATE.md](handoff/STATE.md) 하나만 읽으면 됩니다.** 지금 무엇이
+되어 있고, 고치기 전에 알아야 하는 규칙이 무엇이고, 이미 밟은 함정이
+무엇인지가 거기 있습니다.
+
+특히 **레이아웃의 손계산 상수 네 곳**이 서로 묶여 있습니다. 셸의 여백이나
+머리줄 높이를 건드릴 일이 있으면 그 표를 먼저 보세요.
+
 ## 구조
 
 ```
