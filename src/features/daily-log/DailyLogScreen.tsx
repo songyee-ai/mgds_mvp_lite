@@ -6,7 +6,7 @@ import { ALL_TAGS, repo, type Clinic, type DailyLogWithTags, type Pet, type Tag 
 import { HOME_PATH, PET_NEW_PATH } from '../../app/routes'
 import { recordingTargetDate, today } from '../../domain'
 import { Button, Card, Field } from '../../ui'
-import { autoBackupOnce } from '../backup'
+import { autoBackupOnce, BackupSafetyNet } from '../backup'
 import { CARDS, isComplete, type CardDef, type Draft } from './cards'
 import { HardDayThanks } from './HardDayThanks'
 import { RiskContact } from './RiskContact'
@@ -203,6 +203,18 @@ export function DailyLogScreen() {
             onBlur={() => void persist(draft, tags, memo)}
           />
         </Card>
+
+        {/*
+          자동 백업이 막혔을 수 있어서 내놓는 안전망 (`backup/safetyNet.ts`).
+
+          **`void autoBackupOnce()` 가 위에서 이미 한 번 시도했습니다.** 그
+          시도가 실제로 파일을 만들었는지 앱은 알 수 없어서, 여기에 사용자가
+          직접 누르는 길을 하나 둡니다. 직접 받은 적이 있으면 스스로 사라집니다.
+
+          맨 아래에 두는 이유는 이것이 기록의 일부가 아니기 때문입니다 —
+          저장 · 감사 반응 · 선택 항목이 먼저 끝나고 나서 나옵니다.
+        */}
+        <BackupSafetyNet />
 
         {/*
           홈으로 돌아갑니다. **기록이 이미 저장된 뒤라 이탈이 아닙니다**

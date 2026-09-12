@@ -14,6 +14,7 @@ import {
 } from '../../data'
 import { Button, Card } from '../../ui'
 import { downloadBlob } from './download'
+import { markBackupSaved } from './safetyNet'
 import styles from './backup.module.css'
 
 /**
@@ -42,11 +43,18 @@ export function BackupScreen() {
   const [report, setReport] = useState<ImportReport | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [autoAt, setAutoAt] = useState<Instant | undefined>(undefined)
+  /** 사용자가 직접 받은 시각. 있으면 자동 시도 안내는 할 말이 없어집니다. */
+  const [savedAt, setSavedAt] = useState<Instant | undefined>(undefined)
 
   useEffect(() => {
     let cancelled = false
-    void repo.settings.get('auto_backup_at').then((at) => {
-      if (!cancelled) setAutoAt(at)
+    void Promise.all([
+      repo.settings.get('auto_backup_at'),
+      repo.settings.get('backup_saved_at'),
+    ]).then(([auto, saved]) => {
+      if (cancelled) return
+      setAutoAt(auto)
+      setSavedAt(saved)
     })
     return () => {
       cancelled = true
@@ -62,6 +70,16 @@ export function BackupScreen() {
       const name = backupFileName(new Date())
       downloadBlob(blob, name)
       setExportedName(name)
+      /*
+       * 직접 받았다고 남깁니다. 이 뒤로 기록 화면의 안전망이 나오지
+       * 않습니다 — 이미 파일을 가진 사람에게 다시 권할 이유가 없습니다.
+       *
+       * **`markBackupSaved` 는 던지지 않습니다.** 아래 `catch` 가 이것 때문에
+       * "내보내지 못했어요"를 띄우는 일은 없습니다. 파일은 이미 건넸고,
+       * 시각을 못 남긴 결과는 다음에 한 번 더 권하는 것뿐입니다.
+       */
+      const at = await markBackupSaved()
+      if (at !== null) setSavedAt(at)
     } catch {
       setError(copy.backup.errors.exportFailed)
     } finally {
@@ -97,9 +115,16 @@ export function BackupScreen() {
     <div className={styles.page}>
       <h1 className={styles.title}>{copy.backup.title}</h1>
       <p className={styles.note}>{copy.backup.intro}</p>
-      {autoAt === undefined ? null : (
+      {/*
+        직접 받은 적이 있으면 그것만 말합니다. 자동 시도 안내는 "받은 파일이
+        안 보이면 직접 받으세요"라는 뜻이라, 이미 받은 사람에게는 할 말이
+        없습니다.
+      */}
+      {savedAt !== undefined ? (
+        <p className={styles.note}>{copy.backup.savedDone(savedAt)}</p>
+      ) : autoAt !== undefined ? (
         <p className={styles.note}>{copy.backup.autoDone(autoAt)}</p>
-      )}
+      ) : null}
 
       <Card title={copy.backup.exportSection.title}>
         <label className={styles.check}>

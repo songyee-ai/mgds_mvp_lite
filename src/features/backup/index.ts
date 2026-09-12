@@ -6,5 +6,12 @@
  */
 export { BackupScreen } from './BackupScreen'
 export { BackupEntry } from './BackupEntry'
+export { BackupSafetyNet } from './BackupSafetyNet'
 export { autoBackupOnce, type AutoBackupDeps, type AutoBackupResult } from './autoBackup'
+export {
+  markBackupSaved,
+  prepareBackup,
+  type PreparedBackup,
+  type SafetyNetDeps,
+} from './safetyNet'
 export { downloadBlob } from './download'

@@ -40,6 +40,11 @@ import {
   type WeightRecord,
 } from '../src/data'
 import { autoBackupOnce } from '../src/features/backup/autoBackup'
+import {
+  markBackupSaved,
+  prepareBackup,
+  type PreparedBackup,
+} from '../src/features/backup/safetyNet'
 import { clearAll, seed } from '../src/app/dev/seed'
 
 const AT = '2026-09-09T00:00:00.000Z'
@@ -659,6 +664,94 @@ describe('첫 기록 직후 자동 백업 (완료 판정 3)', () => {
     expect(after['settings']).toEqual(before['settings'])
     expect(after['daily_logs']).toEqual(before['daily_logs'])
     expect(after['photos']).toEqual(before['photos'])
+  })
+})
+
+// ── 자동 백업이 막혔을 때의 안전망 ──────────────────────────────────────
+
+/**
+ * `features/backup/safetyNet.ts`.
+ *
+ * 여기가 지키는 계약은 셋입니다.
+ *
+ * 1. 직접 받은 적이 없으면 **누르기 전에** 파일이 준비된다 (제스처 안에서
+ *    기다리지 않고 건네려면 미리 만들어져 있어야 합니다)
+ * 2. 한 번 받으면 다시 권하지 않는다
+ * 3. 무슨 일이 있어도 던지지 않는다 (기록 화면 안에서 불립니다)
+ */
+describe('자동 백업이 막혔을 때의 안전망', () => {
+  it('직접 받은 적이 없으면 누르기 전에 파일을 준비해 둔다', async () => {
+    const db = await fresh()
+    await fixture(db)
+    const settings = createLocalRepo(db).settings
+    const now = new Date(2026, 8, 9, 14, 3)
+
+    const ready = await prepareBackup({ now, database: db, settings })
+
+    expect(ready).not.toBeNull()
+    expect(ready?.name).toBe('mgds-backup-2026-09-09-1403.json')
+    expect(ready?.blob.size).toBeGreaterThan(0)
+  })
+
+  it('준비한 파일은 그대로 가져올 수 있는 백업이다', async () => {
+    const db = await fresh()
+    await fixture(db)
+    const before = await snapshot(db)
+
+    const ready = await prepareBackup({ database: db, settings: createLocalRepo(db).settings })
+    expect(ready).not.toBeNull()
+
+    await clearAll(db)
+    await importAll((ready as PreparedBackup).blob, db)
+
+    const after = await snapshot(db)
+    expect(after['daily_logs']).toEqual(before['daily_logs'])
+    // 사진까지 담습니다 — 사진을 빼면 이 파일 하나로 전체가 복원되지 않습니다.
+    expect(after['photos']).toEqual(before['photos'])
+  })
+
+  it('한 번 받고 나면 다시 권하지 않는다', async () => {
+    const db = await fresh()
+    await fixture(db)
+    const settings = createLocalRepo(db).settings
+    const now = new Date('2026-09-09T05:32:00.000Z')
+
+    expect(await prepareBackup({ database: db, settings })).not.toBeNull()
+
+    expect(await markBackupSaved({ now, settings })).toBe(now.toISOString())
+    expect(await settings.get('backup_saved_at')).toBe(now.toISOString())
+
+    expect(await prepareBackup({ database: db, settings })).toBeNull()
+  })
+
+  /**
+   * 자동 백업이 시각을 남겼다는 것은 **시도했다**는 뜻일 뿐입니다. 그것으로
+   * 안전망을 끄면 브라우저가 막은 경우에 백업이 하나도 없게 됩니다 —
+   * 두 키를 나눈 이유가 이 테스트입니다.
+   */
+  it('자동 백업이 시각을 남겼어도 안전망은 그대로 나온다', async () => {
+    const db = await fresh()
+    await fixture(db)
+    const settings = createLocalRepo(db).settings
+
+    const auto = await autoBackupOnce({ save: () => {}, database: db, settings })
+    expect(auto.done).toBe(true)
+    expect(await settings.get('auto_backup_at')).toBeDefined()
+
+    expect(await prepareBackup({ database: db, settings })).not.toBeNull()
+  })
+
+  it('읽지 못해도 던지지 않고 아무것도 내놓지 않는다', async () => {
+    const db = await fresh()
+    await fixture(db)
+    const broken = {
+      get: () => Promise.reject(new Error('storage gone')),
+      set: () => Promise.reject(new Error('storage gone')),
+    }
+
+    expect(await prepareBackup({ database: db, settings: broken })).toBeNull()
+    // 파일은 이미 건넨 뒤라 알릴 것이 없습니다. null 로 조용히 넘어갑니다.
+    expect(await markBackupSaved({ settings: broken })).toBeNull()
   })
 })
 
