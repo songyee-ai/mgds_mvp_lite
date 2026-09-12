@@ -4,6 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>More Good Days</title>
+
+    <!--
+      아이콘 (public/ 에 그대로 놓인 파일들, 만드는 법은 handoff/STATE.md 8장).
+
+      브라우저 탭은 투명 배경의 둥근 배지를 씁니다. 홈 화면 아이콘은
+      **투명이 있으면 안 됩니다** — iOS 가 모서리를 스스로 깎기 때문에
+      투명한 자리는 검게 남거나 잘립니다. 그래서 apple-touch-icon 과
+      매니페스트 아이콘은 초록으로 꽉 채운 정사각입니다.
+    -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!--
+      주소창·상태바 색. 앱 배경과 같은 색이라 화면이 위로 이어져 보입니다.
+      값은 ui/tokens.css 의 `--bg` 와 같아야 합니다. CSS 변수를 여기서
+      읽을 수 없어 손으로 적은 값이고, **한쪽만 바꾸면 경계가 생깁니다.**
+    -->
+    <meta name="theme-color" content="#faf8f5" />
+
+    <!-- iOS 에서 홈 화면 아이콘 아래 이름. 길면 iOS 가 알아서 줄입니다. -->
+    <meta name="apple-mobile-web-app-title" content="More Good Days" />
   </head>
   <body>
     <div id="root"></div>
