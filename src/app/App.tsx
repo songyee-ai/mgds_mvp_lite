@@ -4,7 +4,7 @@ import { ErrorBoundary } from './ErrorBoundary'
 import { RootGate } from './RootGate'
 import { DailyLogScreen } from '../features/daily-log'
 import { BackupScreen } from '../features/backup'
-import { PetCreate } from '../features/pet'
+import { PetCreate, PetEdit } from '../features/pet'
 import { HomeScreen } from '../features/home'
 import { IntroScreen } from '../features/intro'
 import { WelcomeScreen } from '../features/welcome'
@@ -91,6 +91,12 @@ const router = createBrowserRouter([
        * (TECH_SPEC 8-6).
        */
       { path: 'pet/backup', element: <BackupScreen /> },
+
+      /**
+       * 아이 정보 고치기. 홈 맨 아래 링크로만 들어갑니다.
+       * 등록 화면이 유일한 입구였던 것을 메웁니다 — 이름 · 사진 · 병원.
+       */
+      { path: 'pet/edit', element: <PetEdit /> },
 
       ...devRoutes,
 

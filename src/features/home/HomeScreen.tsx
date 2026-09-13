@@ -16,6 +16,7 @@ import {
 import { PET_NEW_PATH } from '../../app/routes'
 import { Button, Card, Dots, dotStateOf } from '../../ui'
 import { BackupEntry } from '../backup'
+import { PetEditEntry } from '../pet'
 import { InstallPrompt } from '../install'
 import styles from './home.module.css'
 
@@ -273,14 +274,17 @@ export function HomeScreen() {
       <InstallPrompt />
 
       {/*
-        데이터 백업 진입점 (U09).
+        나가는 문 둘 — 아이 정보 고치기(2026-09-13), 데이터 백업(U09).
 
-        **홈에서 유일하게 다른 화면으로 나가는 링크입니다.** 본 MVP 는 이
-        줄을 아이 탭에 두었지만 라이트에는 탭바가 없고, 기록이 이 기기에만
-        있는 앱이라 이 줄이 유일한 안전장치입니다 (TECH_SPEC 8-6).
-        카드에 담지 않는 이유는 이것이 아이에 관한 정보가 아니기 때문입니다.
+        **홈에서 다른 화면으로 나가는 링크는 이 둘뿐입니다.** 본 MVP 는
+        백업을 아이 탭에 두었지만 라이트에는 탭바가 없습니다. 카드에 담지
+        않는 이유는 둘 다 아이에 관한 *정보*가 아니라 *조작*이기 때문입니다.
+
+        순서는 아이 → 데이터입니다. 그리고 수정 화면이 생기기 전에는
+        이름 · 사진 · 병원이 등록 때 한 번이 마지막이었습니다.
       */}
       <div className={styles.footer}>
+        <PetEditEntry />
         <BackupEntry />
       </div>
     </div>

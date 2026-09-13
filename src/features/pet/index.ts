@@ -5,6 +5,16 @@
  * 사진 리사이즈(TECH_SPEC 11-6)뿐입니다.
  */
 export { PetCreate } from './PetCreate'
+export { PetEdit } from './PetEdit'
+export { PetEditEntry } from './PetEditEntry'
+export {
+  clinicActionOf,
+  editProblemsOf,
+  namePatchOf,
+  type ClinicAction,
+  type EditProblem,
+  type PetEditForm,
+} from './editForm'
 export {
   EMPTY_FORM,
   MAX_APPROXIMATE_YEARS,

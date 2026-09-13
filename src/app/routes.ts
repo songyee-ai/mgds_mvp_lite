@@ -26,3 +26,12 @@ export const HOME_PATH = '/today'
 
 /** 내보내기·가져오기. 홈 하단 링크로만 들어갑니다. */
 export const BACKUP_PATH = '/pet/backup'
+
+/**
+ * 아이 정보 고치기. 홈 하단 링크로만 들어갑니다.
+ *
+ * **등록 화면이 유일한 입구였던 것을 메웁니다** — 이름 · 사진 · 병원이
+ * 등록할 때 한 번이 마지막이었고, 특히 병원 전화번호는 오타를 되돌릴
+ * 방법이 없었습니다 (2026-09-13).
+ */
+export const PET_EDIT_PATH = '/pet/edit'

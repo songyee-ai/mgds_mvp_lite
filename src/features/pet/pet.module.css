@@ -131,3 +131,26 @@
   padding-left: 1.25rem;
   color: var(--text-muted);
 }
+
+/*
+ * 홈 맨 아래 진입점 한 줄 (`PetEditEntry`).
+ *
+ * `backup.module.css` 의 `.entry` 와 같은 모양입니다. 두 줄이 홈의 같은
+ * 자리에 나란히 서므로 값이 어긋나면 눈에 띕니다 — 한쪽을 고치면 다른
+ * 쪽도 보세요. 색은 토큰만 씁니다 (`lint:color`).
+ */
+.entry {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.entry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
