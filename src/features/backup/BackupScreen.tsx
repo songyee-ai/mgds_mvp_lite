@@ -13,6 +13,7 @@ import {
   type Instant,
 } from '../../data'
 import { Button, Card } from '../../ui'
+import { InstallPrompt } from '../install'
 import { downloadBlob } from './download'
 import { markBackupSaved } from './safetyNet'
 import styles from './backup.module.css'
@@ -114,6 +115,20 @@ export function BackupScreen() {
       {savedAt === undefined ? null : (
         <p className={styles.note}>{copy.backup.savedDone(savedAt)}</p>
       )}
+
+      {/*
+        홈 화면에 추가하는 법 (TECH_SPEC 8-6 대응 1번).
+
+        **홈의 카드와 달리 닫기가 없고, 닫은 적이 있어도 나옵니다.**
+        홈 것은 한 번 「나중에」를 누르면 영영 사라졌고 되돌릴 길이
+        없었습니다 — 「나중에」는 "다음에"이지 "영영 안 함"이 아닙니다.
+        여기가 그 "다음에" 찾아올 자리입니다.
+
+        내보내기 위에 둡니다. 설치가 8-6 의 1번이고 백업이 2번인 것과
+        같은 순서입니다 — 잃지 않는 쪽이 먼저, 잃어도 되돌리는 쪽이 다음.
+        이미 홈 화면에서 열었으면 아무것도 그리지 않습니다.
+      */}
+      <InstallPrompt persistent />
 
       <Card title={copy.backup.exportSection.title}>
         <label className={styles.check}>

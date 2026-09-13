@@ -36,7 +36,26 @@ import styles from './install.module.css'
  * **이미 설치한 사람에게는 닫았는지와 무관하게 보이지 않습니다.**
  * `isStandalone()` 을 가장 먼저 봅니다.
  */
-export function InstallPrompt() {
+export interface InstallPromptProps {
+  /**
+   * 닫기를 두지 않고, 닫은 적이 있어도 보여 줍니다 (`/pet/backup`).
+   *
+   * **홈의 카드는 한 번 닫으면 영영 사라지고 되돌릴 길이 없었습니다.**
+   * 「나중에」는 "다음에"라는 뜻이지 "영영 하지 않겠다"가 아닌데 그렇게
+   * 동작했습니다 (2026-09-13 사용자 지적). 홈에서 다시 조르는 대신
+   * **늘 찾아갈 수 있는 자리**를 하나 두는 쪽으로 풀었습니다.
+   *
+   * 백업 화면인 이유는 거기가 사용자가 "내 기록을 어떻게 지키지"를
+   * 생각하며 오는 화면이기 때문입니다. 설치와 백업은 같은 것을 지키는
+   * 두 방법입니다 (TECH_SPEC 8-6 대응 1번과 2번).
+   *
+   * **이미 홈 화면에서 열었으면 여기서도 나오지 않습니다** — 설치한
+   * 사람에게 설치를 말할 이유는 어디에도 없습니다.
+   */
+  persistent?: boolean
+}
+
+export function InstallPrompt({ persistent = false }: InstallPromptProps = {}) {
   const [offer, setOffer] = useState<InstallOffer>('hidden')
   /** 설정을 다 읽기 전에는 아무것도 그리지 않습니다. 깜빡임을 막습니다. */
   const [ready, setReady] = useState(false)
@@ -56,7 +75,8 @@ export function InstallPrompt() {
           standalone: isStandalone(),
           hasPromptEvent: hasPromptEvent(),
           isIos: isIos(),
-          dismissedAt,
+          // 늘 있는 자리는 닫은 기록을 보지 않습니다.
+          dismissedAt: persistent ? undefined : dismissedAt,
         }),
       )
     }
@@ -121,9 +141,12 @@ export function InstallPrompt() {
         ) : (
           <p className={styles.how}>{copy.install.iosHow}</p>
         )}
-        <Button variant="secondary" onClick={dismiss}>
-          {copy.install.dismiss}
-        </Button>
+        {/* 늘 있는 자리에는 닫기가 없습니다. 닫을 것이 아니라 참고할 것입니다. */}
+        {persistent ? null : (
+          <Button variant="secondary" onClick={dismiss}>
+            {copy.install.dismiss}
+          </Button>
+        )}
       </div>
     </Card>
   )
