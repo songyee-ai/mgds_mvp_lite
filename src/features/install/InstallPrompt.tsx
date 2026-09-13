@@ -73,9 +73,21 @@ export function InstallPrompt() {
 
     // 이벤트는 화면보다 늦게 올 수 있습니다. 오면 다시 판정합니다.
     const stop = onPromptEventChange(decide)
+
+    /**
+     * 홈 화면에서 열렸는지도 **한 번만 읽지 않습니다.**
+     *
+     * `display-mode` 는 화면이 뜬 뒤에 바뀔 수 있습니다 — 설치를 마친 순간,
+     * 그리고 iOS 가 페이지를 되살릴 때(뒤로 가기 캐시)가 그렇습니다.
+     * 마운트 때 한 번만 보면 그 뒤로 틀린 답을 들고 있게 됩니다.
+     */
+    const standalone = window.matchMedia?.('(display-mode: standalone)')
+    standalone?.addEventListener('change', decide)
+
     return () => {
       cancelled = true
       stop()
+      standalone?.removeEventListener('change', decide)
     }
   }, [])
 
