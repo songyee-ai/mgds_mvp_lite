@@ -9,6 +9,7 @@ import {
   EMPTY_FORM,
   MAX_APPROXIMATE_YEARS,
   problemsOf,
+  toNewClinic,
   toNewPet,
   type AgeMode,
   type PetForm,
@@ -23,6 +24,14 @@ import styles from './pet.module.css'
  * 오셨어요 · 약 · 알림 시각 · 병원 · 계정)은 라이트 범위 밖입니다. 그래서
  * 진행 표시도 "1/6" 같은 것을 두지 않았습니다 — 없는 단계를 가리키게 됩니다.
  * 앞은 인트로 3장, 뒤는 마무리 1장입니다.
+ *
+ * **⑤ 병원만 예외로 돌아왔습니다** (2026-09-13). 범위 밖으로 두었더니
+ * `repo.clinics.primary()` 가 언제나 `undefined` 가 되어 위험 태그를 골라도
+ * `RiskContact` 가 뜰 수 없었습니다 — PRD FR-2-3 의 안전 경로가 라이트에
+ * 통째로 없었다는 뜻입니다. 각각의 결정(병원 화면 없음 · 홈의 「밤중에
+ * 급하면」 카드 삭제)은 문서에 있었지만 그 합이 0 이 된다는 것은 아무 데도
+ * 없었습니다. 병원 **목록**은 여전히 범위 밖이고, 여기서 받는 것은
+ * **한 곳뿐**입니다.
  *
  * 한 화면에 전부 있고 카드로 나누지 않았습니다. 일일 기록(U08)은 매일 하는
  * 일이라 탭 수가 계약이지만, 등록은 평생 한 번이고 PRD FR-1 수용 기준이
@@ -153,6 +162,24 @@ export function PetCreate() {
           await repo.pets.update(pet.id, { photo_id: photoId })
         } catch {
           // 삼킵니다. 아래에서 기록 흐름으로 넘어갑니다.
+        }
+      }
+
+      /**
+       * 병원도 아이를 만든 뒤에 담습니다 — `pet_id` 가 필요합니다.
+       *
+       * **사진과 같은 계약으로 삼킵니다.** 병원 저장이 실패해도 등록을
+       * 되돌리지 않습니다. 병원 없는 아이가 아이 없는 상태보다 낫습니다.
+       * 다만 사진과 달리 **나중에 다시 넣을 화면이 아직 없습니다** —
+       * 그래서 조용히 실패하면 사용자는 적었다고 믿는데 없습니다.
+       * 병원을 고치는 화면이 생기면 이 삼킴도 같이 다시 보세요.
+       */
+      const clinic = toNewClinic(form, pet.id)
+      if (clinic !== null) {
+        try {
+          await repo.clinics.create(clinic)
+        } catch {
+          // 삼킵니다. 위 주석 참고.
         }
       }
 
@@ -292,6 +319,31 @@ export function PetCreate() {
           value={form.adoptedAt}
           onChange={(event) => set('adoptedAt', event.target.value)}
         />
+      </Card>
+
+      {/*
+        자주 가는 병원 (PRD FR-2-3). 사진 앞에 둡니다 — 사진은 건너뛰는
+        항목이라 맨 뒤가 자연스럽고, 이 칸은 적어 두면 쓰이는 칸입니다.
+      */}
+      <Card>
+        <span className={styles.label}>{copy.petCreate.clinic.label}</span>
+        <div className={styles.stack}>
+          <Field
+            label={copy.petCreate.clinic.nameLabel}
+            placeholder={copy.petCreate.clinic.namePlaceholder}
+            value={form.clinicName}
+            onChange={(event) => set('clinicName', event.target.value)}
+          />
+          <Field
+            label={copy.petCreate.clinic.phoneLabel}
+            type="tel"
+            inputMode="tel"
+            placeholder={copy.petCreate.clinic.phonePlaceholder}
+            hint={copy.petCreate.clinic.hint}
+            value={form.clinicPhone}
+            onChange={(event) => set('clinicPhone', event.target.value)}
+          />
+        </div>
       </Card>
 
       <Card>

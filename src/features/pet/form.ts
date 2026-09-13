@@ -42,6 +42,20 @@ export type PetForm = {
    * 홈(U11)의 몫입니다. 자세한 것은 handoff/U04.md.
    */
   adoptedAt: string
+  /**
+   * 자주 가는 병원. 선택 항목이고, 둘은 **한 덩어리입니다** (PRD FR-2-3).
+   *
+   * **이 두 칸이 라이트에서 병원이 생기는 유일한 경로입니다.** 없으면
+   * `repo.clinics.primary()` 가 언제나 `undefined` 가 되고, 위험 태그를
+   * 골라도 `RiskContact` 가 뜰 수 없습니다 — 위험 신호에서 연락으로 가는
+   * 길이 통째로 사라집니다. 2026-09-13 까지 실제로 그 상태였습니다.
+   *
+   * 한쪽만 채우면 막습니다(`clinic_incomplete`). 이름만 있으면 걸 수 없고,
+   * 번호만 있으면 누구에게 거는지 모릅니다. 밤중에 급한 사람에게 반쪽짜리
+   * 연락처를 내미는 것이 가장 나쁩니다.
+   */
+  clinicName: string
+  clinicPhone: string
 }
 
 export const EMPTY_FORM: PetForm = {
@@ -53,6 +67,8 @@ export const EMPTY_FORM: PetForm = {
   birthDate: '',
   approximateYears: '',
   adoptedAt: '',
+  clinicName: '',
+  clinicPhone: '',
 }
 
 /** 등록을 막는 이유. 화면이 문구를 고르는 근거입니다 (TECH_SPEC 13). */
@@ -63,6 +79,7 @@ export type FormProblem =
   | 'birth_date_future'
   | 'approximate_years_required'
   | 'adopted_at_future'
+  | 'clinic_incomplete'
 
 /** 대략 나이로 받는 범위. 30살을 넘는 개·고양이는 사실상 없습니다. */
 export const MAX_APPROXIMATE_YEARS = 30
@@ -102,7 +119,49 @@ export function problemsOf(form: PetForm, now: Date, tz: string): FormProblem[] 
   // 선택 항목이지만, 채웠다면 미래일 수는 없습니다.
   if (form.adoptedAt !== '' && form.adoptedAt > localToday) problems.push('adopted_at_future')
 
+  // 병원은 둘 다 비우거나 둘 다 채우거나입니다. 반쪽은 걸 수 없습니다.
+  const hasClinicName = form.clinicName.trim() !== ''
+  const hasClinicPhone = form.clinicPhone.trim() !== ''
+  if (hasClinicName !== hasClinicPhone) problems.push('clinic_incomplete')
+
   return problems
+}
+
+/** 병원을 적었는가. `toNewClinic` 과 `problemsOf` 가 같은 판정을 쓰게 둡니다. */
+function clinicFilled(form: PetForm): boolean {
+  return form.clinicName.trim() !== '' && form.clinicPhone.trim() !== ''
+}
+
+/**
+ * `PetForm` → 병원 한 곳. 적지 않았으면 `null` 이고, 그러면 만들지 않습니다.
+ *
+ * `problemsOf` 가 빈 배열일 때만 부르세요 — 한쪽만 채운 폼은 여기서 던집니다.
+ * `toNewPet` 과 같은 계약입니다.
+ *
+ * `is_primary` 가 `true` 인 이유는 `repo.clinics.primary()` 가 그 깃발을 보고
+ * 고르기 때문입니다. 라이트에는 병원이 한 곳뿐이라 언제나 그 한 곳이
+ * 대표입니다. `address`·`lat`·`lng` 는 U24(24시 병원 지도)의 칸이고 여기서
+ * 묻지 않습니다 — 밤중에 급할 때 필요한 것은 주소가 아니라 번호입니다.
+ */
+export function toNewClinic(
+  form: PetForm,
+  petId: string,
+): { pet_id: string; name: string; phone: string; address: null; lat: null; lng: null; is_primary: true } | null {
+  const hasAny = form.clinicName.trim() !== '' || form.clinicPhone.trim() !== ''
+  if (!hasAny) return null
+  if (!clinicFilled(form)) {
+    throw new Error('병원 이름과 전화번호 중 하나가 비었습니다. problemsOf 를 먼저 확인하세요')
+  }
+
+  return {
+    pet_id: petId,
+    name: form.clinicName.trim(),
+    phone: form.clinicPhone.trim(),
+    address: null,
+    lat: null,
+    lng: null,
+    is_primary: true,
+  }
 }
 
 /**

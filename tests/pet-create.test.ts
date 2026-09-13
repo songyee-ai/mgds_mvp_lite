@@ -18,6 +18,7 @@ import {
   MAX_APPROXIMATE_YEARS,
   approximateBirthDate,
   problemsOf,
+  toNewClinic,
   toNewPet,
   type FormProblem,
   type PetForm,
@@ -155,6 +156,7 @@ describe('problemsOf', () => {
       'birth_date_future',
       'approximate_years_required',
       'adopted_at_future',
+      'clinic_incomplete',
     ]
     expect(keys.some((key) => key.includes('photo'))).toBe(false)
   })
@@ -167,6 +169,7 @@ describe('problemsOf', () => {
       'birth_date_future',
       'approximate_years_required',
       'adopted_at_future',
+      'clinic_incomplete',
     ]
     for (const key of keys) {
       expect(copy.petCreate.problems[key]).toBeTypeOf('string')
@@ -193,6 +196,60 @@ describe('입양일', () => {
     expect(problemsOf(filled({ adoptedAt: '2026-09-10' }), NOW, KST)).toContain(
       'adopted_at_future',
     )
+  })
+})
+
+// ── 자주 가는 병원 (PRD FR-2-3 의 안전 경로) ───────────────────────────
+
+/**
+ * **이 두 칸이 라이트에서 병원이 생기는 유일한 경로입니다.**
+ *
+ * 2026-09-13 이전에는 이 칸이 없었고, 그래서 `repo.clinics.primary()` 가
+ * 언제나 `undefined` 였습니다 — 위험 태그를 골라도 `RiskContact` 가 뜰 수
+ * 없었다는 뜻입니다. 각각의 결정(병원 화면 없음 · 홈의 「밤중에 급하면」
+ * 카드 삭제)은 문서에 있었지만 **그 합이 0 이 된다는 것은 아무 데도
+ * 없었습니다.** 그 구멍이 다시 열리면 여기서 걸립니다.
+ */
+describe('자주 가는 병원', () => {
+  it('비어 있으면 만들지 않는다. 건너뛸 수 있어야 합니다', () => {
+    expect(problemsOf(filled(), NOW, KST)).toEqual([])
+    expect(toNewClinic(filled(), 'pet-1')).toBeNull()
+  })
+
+  it('둘 다 적으면 대표 병원 한 곳이 된다', () => {
+    const form = filled({ clinicName: ' 행복동물병원 ', clinicPhone: ' 02-000-0000 ' })
+    expect(problemsOf(form, NOW, KST)).toEqual([])
+    expect(toNewClinic(form, 'pet-1')).toEqual({
+      pet_id: 'pet-1',
+      // 앞뒤 공백은 지웁니다. tel: 스킴에 공백이 그대로 가면 안 됩니다.
+      name: '행복동물병원',
+      phone: '02-000-0000',
+      address: null,
+      lat: null,
+      lng: null,
+      // `repo.clinics.primary()` 가 이 깃발을 보고 고릅니다.
+      is_primary: true,
+    })
+  })
+
+  it('한쪽만 적으면 막는다 — 반쪽짜리 연락처가 가장 나쁩니다', () => {
+    expect(problemsOf(filled({ clinicName: '행복동물병원' }), NOW, KST)).toEqual([
+      'clinic_incomplete',
+    ])
+    expect(problemsOf(filled({ clinicPhone: '02-000-0000' }), NOW, KST)).toEqual([
+      'clinic_incomplete',
+    ])
+  })
+
+  it('problemsOf 를 건너뛰고 부르면 던진다', () => {
+    expect(() => toNewClinic(filled({ clinicName: '행복동물병원' }), 'pet-1')).toThrow()
+    expect(() => toNewClinic(filled({ clinicPhone: '02-000-0000' }), 'pet-1')).toThrow()
+  })
+
+  it('공백만 적은 것은 적지 않은 것이다', () => {
+    const form = filled({ clinicName: '   ', clinicPhone: '  ' })
+    expect(problemsOf(form, NOW, KST)).toEqual([])
+    expect(toNewClinic(form, 'pet-1')).toBeNull()
   })
 })
 
