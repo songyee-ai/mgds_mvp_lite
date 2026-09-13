@@ -18,6 +18,7 @@ export {
 export {
   MAX_BYTES,
   MAX_EDGE,
+  MIME_LADDER,
   PhotoError,
   QUALITY_LADDER,
   WEBP_MIME,

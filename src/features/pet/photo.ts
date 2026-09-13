@@ -26,6 +26,32 @@ export const MAX_EDGE = 1024
 export const WEBP_QUALITY = 0.8
 export const WEBP_MIME = 'image/webp'
 
+/**
+ * 형식 사다리 (2026-09-13, 아이폰 실기기에서 사진이 안 담기던 것).
+ *
+ * **명세서는 WebP 를 정했지만, 브라우저가 WebP 로 못 쓰면 사진을 통째로
+ * 잃습니다.** 그쪽이 더 나쁩니다.
+ *
+ * `canvas.toBlob` 은 모르는 형식을 요구받으면 **거절하지 않고 조용히 PNG 로
+ * 떨어뜨립니다.** 그래서 아래 `encode` 가 돌려받은 `blob.type` 을 확인하고,
+ * 요구한 형식이 아니면 그 형식을 못 쓰는 것으로 보고 다음 칸으로 갑니다.
+ *
+ * **JPEG 로 내려가는 것은 형식을 못 쓸 때뿐입니다.** WebP 로 쓸 수 있으면
+ * 크기가 얼마든 WebP 를 씁니다 — 크기는 아래 `QUALITY_LADDER` 의 일이고,
+ * 이 사다리는 "이 브라우저가 이 형식을 쓸 수 있는가"에만 반응합니다.
+ * 두 사다리를 섞으면 같은 기기에서 사진마다 형식이 달라집니다.
+ *
+ * 저장·내보내기는 형식을 가리지 않습니다 — `Photo.blob` 이 자기 타입을
+ * 들고 다니고 `export.ts` 가 그것을 그대로 옮깁니다.
+ */
+export const MIME_LADDER: readonly string[] = [WEBP_MIME, 'image/jpeg']
+
+/** 형식마다 파일 이름 끝. `repo.photos.put` 은 이름을 보지 않지만 사람이 봅니다. */
+const EXTENSIONS: Record<string, string> = {
+  'image/webp': 'webp',
+  'image/jpeg': 'jpg',
+}
+
 /** U10 완료 판정 2 — "리사이즈 후 파일 크기 300KB 이하". */
 export const MAX_BYTES = 300_000
 
@@ -86,6 +112,83 @@ export type ResizedPhoto = {
   bytes: number
   /** 실제로 쓰인 품질. 사다리를 내려갔으면 0.8 이 아닙니다. */
   quality: number
+  /** 실제로 쓰인 형식. WebP 를 못 쓰는 브라우저에서는 `image/jpeg` 입니다. */
+  mime: string
+}
+
+/**
+ * 그림을 픽셀로 바꿉니다. **두 길을 차례로 시도합니다.**
+ *
+ * `createImageBitmap` 이 먼저인 이유는 `imageOrientation: 'from-image'` 로
+ * EXIF 회전을 명시적으로 요구할 수 있기 때문입니다 — 세로로 찍은 사진이
+ * 눕는 것을 막는 자리입니다.
+ *
+ * 그것이 실패하면 `<img>` 로 갑니다. **둘의 디코더가 늘 같지는 않습니다** —
+ * 특히 iOS 의 HEIC 는 `<img>` 로는 열리는데 `createImageBitmap` 으로는
+ * 안 되는 경우가 보고됩니다. `<img>` 쪽도 요즘 브라우저는 EXIF 회전을
+ * 기본으로 적용하므로(`image-orientation: from-image` 가 기본값) 결과는
+ * 같습니다.
+ *
+ * 둘 다 실패해야 `decode_failed` 입니다.
+ */
+type Decoded = {
+  draw: CanvasImageSource
+  width: number
+  height: number
+  release: () => void
+}
+
+async function decode(source: Blob): Promise<Decoded> {
+  try {
+    const bitmap = await createImageBitmap(source, { imageOrientation: 'from-image' })
+    return {
+      draw: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      release: () => bitmap.close(),
+    }
+  } catch {
+    // 아래 `<img>` 로 넘어갑니다. 여기서 던지면 두 번째 길이 막힙니다.
+  }
+
+  const url = URL.createObjectURL(source)
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image()
+      element.onload = () => resolve(element)
+      element.onerror = () => reject(new Error('img decode failed'))
+      element.src = url
+    })
+    return {
+      draw: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      // URL 은 캔버스에 그린 뒤에 반납합니다. 먼저 반납하면 그림이 비어 나옵니다.
+      release: () => URL.revokeObjectURL(url),
+    }
+  } catch (cause) {
+    URL.revokeObjectURL(url)
+    throw new PhotoError('decode_failed', `createImageBitmap and <img> both failed: ${String(cause)}`)
+  }
+}
+
+/**
+ * 한 칸 써 봅니다. 이 브라우저가 그 형식을 못 쓰면 `null`.
+ *
+ * **`toBlob` 은 모르는 형식을 거절하지 않습니다.** 조용히 PNG 를 돌려줍니다.
+ * 그대로 담으면 용량이 몇 배가 되어 "300KB 이하"가 소리 없이 깨지므로,
+ * 돌려받은 타입을 확인해 다른 형식이면 못 쓰는 것으로 봅니다.
+ */
+async function encode(
+  canvas: HTMLCanvasElement,
+  mime: string,
+  quality: number,
+): Promise<Blob | null> {
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, mime, quality)
+  })
+  if (blob === null) return null
+  return blob.type === mime ? blob : null
 }
 
 /**
@@ -100,58 +203,60 @@ export type ResizedPhoto = {
  * 뒤에는 EXIF 가 남지 않으므로 **위치 정보 같은 메타데이터도 함께 사라집니다** —
  * 가입 전 서버 전송이 0건이라는 성질(TECH_SPEC 8-7)과 같은 방향입니다.
  */
-export async function resizePhoto(source: Blob, name = 'pet.webp'): Promise<ResizedPhoto> {
-  let bitmap: ImageBitmap
-  try {
-    bitmap = await createImageBitmap(source, { imageOrientation: 'from-image' })
-  } catch (cause) {
-    throw new PhotoError('decode_failed', `createImageBitmap failed: ${String(cause)}`)
-  }
+export async function resizePhoto(source: Blob, name = 'pet'): Promise<ResizedPhoto> {
+  const decoded = await decode(source)
 
   try {
-    const longest = Math.max(bitmap.width, bitmap.height)
+    const longest = Math.max(decoded.width, decoded.height)
     const scale = longest > MAX_EDGE ? MAX_EDGE / longest : 1
-    const width = Math.max(1, Math.round(bitmap.width * scale))
-    const height = Math.max(1, Math.round(bitmap.height * scale))
+    const width = Math.max(1, Math.round(decoded.width * scale))
+    const height = Math.max(1, Math.round(decoded.height * scale))
 
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
     const context = canvas.getContext('2d')
     if (context === null) throw new PhotoError('encode_failed', '2d context unavailable')
-    context.drawImage(bitmap, 0, 0, width, height)
+    context.drawImage(decoded.draw, 0, 0, width, height)
 
     /**
-     * 사다리를 내려갑니다. 첫 칸이 명세서의 0.8 이고, 300KB 안에 들면
-     * 거기서 끝입니다 — 실사 사진은 전부 여기서 끝납니다.
+     * 사다리 둘을 겹쳐 내려갑니다.
+     *
+     * **바깥이 형식, 안이 품질입니다.** 형식 하나로 한 칸이라도 써지면 그
+     * 형식으로 끝냅니다 — 크기가 안 맞아도 다음 형식으로 넘어가지 않습니다.
+     * 넘어가면 같은 기기에서 사진마다 형식이 달라집니다.
+     *
+     * 품질 첫 칸이 명세서의 0.8 이고, 300KB 안에 들면 거기서 끝입니다 —
+     * 실사 사진은 전부 여기서 끝납니다. 마지막 칸까지 가도 300KB 를 넘으면
+     * **그래도 담습니다.** 사진을 잃는 것보다 조금 큰 사진이 낫고, 결과
+     * 크기는 `bytes` 로 돌려주므로 부르는 쪽이 압니다.
      */
-    let blob: Blob | null = null
-    let quality = WEBP_QUALITY
-    for (const step of QUALITY_LADDER) {
-      quality = step
-      blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, WEBP_MIME, step)
-      })
-      if (blob === null) throw new PhotoError('encode_failed', 'toBlob returned null')
-      /**
-       * WebP 를 못 쓰는 브라우저는 **조용히 PNG 로 떨어뜨립니다.** 그러면
-       * 용량이 몇 배가 되어 "300KB 이하"가 조용히 깨집니다. 확인합니다.
-       */
-      if (blob.type !== WEBP_MIME) {
-        throw new PhotoError('encode_failed', `expected ${WEBP_MIME}, got ${blob.type}`)
-      }
-      if (blob.size <= MAX_BYTES) break
-    }
-    if (blob === null) throw new PhotoError('encode_failed', 'ladder produced nothing')
+    for (const mime of MIME_LADDER) {
+      let best: { blob: Blob; quality: number } | null = null
 
-    return {
-      file: new File([blob], name, { type: WEBP_MIME }),
-      width,
-      height,
-      bytes: blob.size,
-      quality,
+      for (const step of QUALITY_LADDER) {
+        const blob = await encode(canvas, mime, step)
+        // 첫 칸에서 막히면 이 브라우저가 이 형식을 못 쓰는 것입니다.
+        if (blob === null) break
+        best = { blob, quality: step }
+        if (blob.size <= MAX_BYTES) break
+      }
+
+      if (best === null) continue
+
+      const extension = EXTENSIONS[mime] ?? 'img'
+      return {
+        file: new File([best.blob], `${name}.${extension}`, { type: mime }),
+        width,
+        height,
+        bytes: best.blob.size,
+        quality: best.quality,
+        mime,
+      }
     }
+
+    throw new PhotoError('encode_failed', `no usable format among ${MIME_LADDER.join(', ')}`)
   } finally {
-    bitmap.close()
+    decoded.release()
   }
 }
