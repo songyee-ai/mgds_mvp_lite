@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { App } from './app'
+import { App, registerServiceWorker } from './app'
 import './ui/tokens.css'
 
 const container = document.getElementById('root')
@@ -11,3 +11,6 @@ createRoot(container).render(
     <App />
   </StrictMode>,
 )
+
+// 첫 화면을 그린 뒤에 붙습니다. 자세한 것은 app/sw.ts.
+registerServiceWorker()
