@@ -6,7 +6,7 @@ import { ALL_TAGS, repo, type Clinic, type DailyLogWithTags, type Pet, type Tag 
 import { HOME_PATH, PET_NEW_PATH } from '../../app/routes'
 import { recordingTargetDate, today } from '../../domain'
 import { Button, Card, Field } from '../../ui'
-import { autoBackupOnce, BackupSafetyNet } from '../backup'
+import { BackupSafetyNet } from '../backup'
 import { CARDS, isComplete, type CardDef, type Draft } from './cards'
 import { HardDayThanks } from './HardDayThanks'
 import { RiskContact } from './RiskContact'
@@ -108,13 +108,23 @@ export function DailyLogScreen() {
       setSaved({ ...log, tags: nextTags })
 
       /**
-       * 첫 기록 직후 자동 백업 (TECH_SPEC 8-6 대응 2번 · PRD FR-13-1).
+       * **여기서 파일을 만들지 않습니다** (2026-09-13 결정).
        *
-       * **기록이 저장된 뒤에, 기다리지 않고 부릅니다.** 이 함수는 던지지
-       * 않고 두 번째 호출부터는 아무 일도 하지 않습니다. 백업 때문에 화면이
-       * 멈추거나 기록이 막히는 일은 없어야 합니다 (U09 완료 판정 3).
+       * 예전에는 이 자리에서 `autoBackupOnce()` 가 사용자 조작 없이 백업
+       * 파일을 내려받게 했습니다 (TECH_SPEC 8-6 대응 2번). 지웠습니다.
+       *
+       * **이 함수가 한 번만 불리는 함수가 아니기 때문입니다.** 태그를 누를
+       * 때마다, 메모에서 포커스가 빠질 때마다 다시 옵니다. `auto_backup_at`
+       * 한 키로 막으려 했지만 그 키가 **쓰이기 전에** 다음 호출이 읽어서,
+       * 저장 직후 태그를 고르는 동안 내려받기가 여러 번 떨어졌습니다
+       * (2026-09-13 아이폰 실기기). 기록 한 번에 팝업이 여러 번 뜨면
+       * "하루 10초"라는 계약이 깨집니다.
+       *
+       * 8-6 이 자동 백업을 요구한 이유는 7일 저장소 삭제인데, **같은 항목이
+       * 홈 화면 웹앱은 그 정책에서 제외라고 적고 있습니다.** 설치 권유가
+       * 들어간 지금(`features/install`) 그쪽이 더 나은 대응이고, 파일은
+       * 사용자가 누를 때만 만듭니다 (`features/backup/safetyNet.ts`).
        */
-      void autoBackupOnce()
     },
     [pet, date],
   )
@@ -205,11 +215,10 @@ export function DailyLogScreen() {
         </Card>
 
         {/*
-          자동 백업이 막혔을 수 있어서 내놓는 안전망 (`backup/safetyNet.ts`).
+          백업 파일을 만드는 **유일한 자리**입니다 (`backup/safetyNet.ts`).
 
-          **`void autoBackupOnce()` 가 위에서 이미 한 번 시도했습니다.** 그
-          시도가 실제로 파일을 만들었는지 앱은 알 수 없어서, 여기에 사용자가
-          직접 누르는 길을 하나 둡니다. 직접 받은 적이 있으면 스스로 사라집니다.
+          자동으로 떨어지던 것을 지운 뒤로(위 `persist` 주석) 파일은 여기서
+          사용자가 누를 때만 생깁니다. 한 번 받으면 스스로 사라집니다.
 
           맨 아래에 두는 이유는 이것이 기록의 일부가 아니기 때문입니다 —
           저장 · 감사 반응 · 선택 항목이 먼저 끝나고 나서 나옵니다.

@@ -39,7 +39,6 @@ import {
   type Tables,
   type WeightRecord,
 } from '../src/data'
-import { autoBackupOnce } from '../src/features/backup/autoBackup'
 import {
   markBackupSaved,
   prepareBackup,
@@ -581,92 +580,6 @@ describe('읽을 수 없는 파일', () => {
   })
 })
 
-// ── 자동 백업 ───────────────────────────────────────────────────────────
-
-describe('첫 기록 직후 자동 백업 (완료 판정 3)', () => {
-  it('한 번만 떨어지고 auto_backup_at 에 시각을 남긴다', async () => {
-    const db = await fresh()
-    await fixture(db)
-    const settings = createLocalRepo(db).settings
-    const saved: string[] = []
-    const now = new Date('2026-09-09T05:32:00.000Z')
-
-    const first = await autoBackupOnce({
-      save: (_blob, name) => saved.push(name),
-      now,
-      database: db,
-      settings,
-    })
-    expect(first.done).toBe(true)
-    expect(saved).toHaveLength(1)
-    expect(await settings.get('auto_backup_at')).toBe(now.toISOString())
-
-    const second = await autoBackupOnce({
-      save: (_blob, name) => saved.push(name),
-      now,
-      database: db,
-      settings,
-    })
-    expect(second).toEqual({ done: false, reason: 'already_backed_up' })
-    expect(saved).toHaveLength(1)
-  })
-
-  it('저장이 실패해도 던지지 않고, 다음 기록에서 다시 시도한다', async () => {
-    const db = await fresh()
-    await fixture(db)
-    const settings = createLocalRepo(db).settings
-
-    const blocked = await autoBackupOnce({
-      save: () => {
-        throw new Error('download blocked')
-      },
-      database: db,
-      settings,
-    })
-
-    expect(blocked.done).toBe(false)
-    expect(blocked).toMatchObject({ reason: 'failed' })
-    // 성공하지 않았으므로 시각을 남기지 않습니다 — 다음 기록에서 재시도합니다.
-    expect(await settings.get('auto_backup_at')).toBeUndefined()
-
-    let calls = 0
-    const retried = await autoBackupOnce({
-      save: () => {
-        calls += 1
-      },
-      database: db,
-      settings,
-    })
-    expect(retried.done).toBe(true)
-    expect(calls).toBe(1)
-  })
-
-  it('만든 파일이 그대로 가져올 수 있는 백업이다', async () => {
-    const db = await fresh()
-    await fixture(db)
-    const before = await snapshot(db)
-    let captured: Blob | null = null
-
-    await autoBackupOnce({
-      save: (blob) => {
-        captured = blob
-      },
-      database: db,
-      settings: createLocalRepo(db).settings,
-    })
-
-    expect(captured).not.toBeNull()
-    await clearAll(db)
-    await importAll(captured as unknown as Blob, db)
-
-    // auto_backup_at 은 백업 파일을 만든 뒤에 쓰이므로 파일에 없습니다.
-    const after = await snapshot(db)
-    expect(after['settings']).toEqual(before['settings'])
-    expect(after['daily_logs']).toEqual(before['daily_logs'])
-    expect(after['photos']).toEqual(before['photos'])
-  })
-})
-
 // ── 자동 백업이 막혔을 때의 안전망 ──────────────────────────────────────
 
 /**
@@ -725,18 +638,19 @@ describe('자동 백업이 막혔을 때의 안전망', () => {
   })
 
   /**
-   * 자동 백업이 시각을 남겼다는 것은 **시도했다**는 뜻일 뿐입니다. 그것으로
-   * 안전망을 끄면 브라우저가 막은 경우에 백업이 하나도 없게 됩니다 —
-   * 두 키를 나눈 이유가 이 테스트입니다.
+   * **예전 백업 파일에는 `auto_backup_at` 행이 들어 있습니다.** 조작 없이
+   * 파일을 내려받게 하던 시절의 키이고 2026-09-13 에 지웠습니다. 가져오기는
+   * 설정 테이블을 그대로 옮기므로 그 행이 다시 들어올 수 있는데, 그것 때문에
+   * 안전망이 꺼지면 **백업이 하나도 없는 기기에서 권유가 사라집니다.**
+   * 판정은 `backup_saved_at` 하나만 봅니다.
    */
-  it('자동 백업이 시각을 남겼어도 안전망은 그대로 나온다', async () => {
+  it('예전 auto_backup_at 행이 들어와도 안전망은 그대로 나온다', async () => {
     const db = await fresh()
     await fixture(db)
     const settings = createLocalRepo(db).settings
 
-    const auto = await autoBackupOnce({ save: () => {}, database: db, settings })
-    expect(auto.done).toBe(true)
-    expect(await settings.get('auto_backup_at')).toBeDefined()
+    // 유니온에 없는 키라 타입을 우회합니다 — 예전 파일에서만 오는 행입니다.
+    await db.settings.put({ key: 'auto_backup_at', value: AT } as unknown as Setting)
 
     expect(await prepareBackup({ database: db, settings })).not.toBeNull()
   })

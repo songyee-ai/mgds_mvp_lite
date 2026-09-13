@@ -42,18 +42,13 @@ export function BackupScreen() {
   const [exportedName, setExportedName] = useState<string | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [autoAt, setAutoAt] = useState<Instant | undefined>(undefined)
-  /** 사용자가 직접 받은 시각. 있으면 자동 시도 안내는 할 말이 없어집니다. */
+  /** 사용자가 직접 받은 시각. 파일이 손에 들어온 것이 확인된 유일한 값입니다. */
   const [savedAt, setSavedAt] = useState<Instant | undefined>(undefined)
 
   useEffect(() => {
     let cancelled = false
-    void Promise.all([
-      repo.settings.get('auto_backup_at'),
-      repo.settings.get('backup_saved_at'),
-    ]).then(([auto, saved]) => {
+    void repo.settings.get('backup_saved_at').then((saved) => {
       if (cancelled) return
-      setAutoAt(auto)
       setSavedAt(saved)
     })
     return () => {
@@ -98,8 +93,8 @@ export function BackupScreen() {
     setReport(null)
     try {
       setReport(await importAll(file))
-      // 가져온 파일에 자동 백업 시각이 들어 있을 수 있습니다.
-      setAutoAt(await repo.settings.get('auto_backup_at'))
+      // 가져온 파일에 "직접 받은 시각"이 들어 있을 수 있습니다.
+      setSavedAt(await repo.settings.get('backup_saved_at'))
     } catch (cause) {
       setError(
         cause instanceof ImportError
@@ -115,16 +110,10 @@ export function BackupScreen() {
     <div className={styles.page}>
       <h1 className={styles.title}>{copy.backup.title}</h1>
       <p className={styles.note}>{copy.backup.intro}</p>
-      {/*
-        직접 받은 적이 있으면 그것만 말합니다. 자동 시도 안내는 "받은 파일이
-        안 보이면 직접 받으세요"라는 뜻이라, 이미 받은 사람에게는 할 말이
-        없습니다.
-      */}
-      {savedAt !== undefined ? (
+      {/* 받은 적이 있을 때만. 아직 없는 사람에게 없다고 말할 이유가 없습니다. */}
+      {savedAt === undefined ? null : (
         <p className={styles.note}>{copy.backup.savedDone(savedAt)}</p>
-      ) : autoAt !== undefined ? (
-        <p className={styles.note}>{copy.backup.autoDone(autoAt)}</p>
-      ) : null}
+      )}
 
       <Card title={copy.backup.exportSection.title}>
         <label className={styles.check}>
