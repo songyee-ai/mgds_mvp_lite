@@ -16,6 +16,7 @@ import {
 import { PET_NEW_PATH } from '../../app/routes'
 import { Button, Card, Dots, dotStateOf } from '../../ui'
 import { BackupEntry } from '../backup'
+import { InstallPrompt } from '../install'
 import styles from './home.module.css'
 
 /**
@@ -257,6 +258,19 @@ export function HomeScreen() {
           <Dots values={dots} dayLabels={dayLabels} label={copy.home.week.label} />
         </div>
       </Card>
+
+      {/*
+        홈 화면에 추가 권유 (TECH_SPEC 8-6 대응 1번).
+
+        **백업 줄 바로 위입니다.** 둘은 같은 것을 지키는 두 방법이고
+        (설치는 잃지 않게, 백업은 잃어도 되돌리게), 8-6 에서도 설치가
+        1번 백업이 2번입니다.
+
+        이미 설치했거나 · 한 번 닫았거나 · 설치 방법을 모르는 브라우저면
+        **아무것도 그리지 않습니다.** 홈이 늘어나는 일은 그 셋 중 어느
+        것도 아닐 때뿐입니다.
+      */}
+      <InstallPrompt />
 
       {/*
         데이터 백업 진입점 (U09).
